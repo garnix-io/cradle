@@ -12,6 +12,7 @@ library
   exposed-modules:
       Cradle
   other-modules:
+      Cradle.Input
       Cradle.Output
       Cradle.ProcessConfiguration
       Paths_cradle
@@ -30,6 +31,7 @@ test-suite spec
       CradleSpec
       DocTest.TypeErrors
       Cradle
+      Cradle.Input
       Cradle.Output
       Cradle.ProcessConfiguration
       Paths_cradle
