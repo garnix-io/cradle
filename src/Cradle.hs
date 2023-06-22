@@ -15,6 +15,7 @@ module Cradle where
 import Control.Concurrent
 import Control.Exception (ErrorCall (..), throwIO)
 import Control.Monad.IO.Class (MonadIO, liftIO)
+import Data.Char
 import Data.Kind
 import Data.List (foldl')
 import GHC.TypeError (ErrorMessage (..), TypeError)
@@ -102,6 +103,15 @@ instance Output String where
     exitCode <- waitForProcess handle
     handleExitCode config exitCode
     readMVar stdoutMVar
+
+newtype StdoutTrimmed = StdoutTrimmed String
+
+instance Output StdoutTrimmed where
+  out :: ProcessConfiguration -> IO StdoutTrimmed
+  out config = do
+    StdoutTrimmed . trim <$> out config
+    where
+      trim = dropWhile isSpace . reverse . dropWhile isSpace . reverse
 
 handleExitCode :: ProcessConfiguration -> ExitCode -> IO ()
 handleExitCode (ProcessConfiguration executable _) exitCode = do

@@ -86,6 +86,17 @@ spec = do
       output <- run "./exe" "foo" "bar"
       output `shouldBe` "foo\nbar\n"
 
+    describe "StdoutTrimmed" $ do
+      it "allows to capture the stripped stdout" $ do
+        writeBashScript "exe" "echo foo"
+        StdoutTrimmed output <- run "./exe" "foo"
+        output `shouldBe` "foo"
+
+      it "strips leading and trailing spaces and newlines" $ do
+        writeBashScript "exe" "echo '  foo   '"
+        StdoutTrimmed output <- run "./exe" "foo"
+        output `shouldBe` "foo"
+
 writeBashScript :: FilePath -> String -> IO ()
 writeBashScript file code = do
   bashPath <- getEnv "BASH_PATH"
