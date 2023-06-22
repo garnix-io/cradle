@@ -1,6 +1,10 @@
+{-# LANGUAGE ScopedTypeVariables #-}
+
 module CradleSpec where
 
+import Control.Exception
 import Cradle
+import GHC.IO.Exception
 import System.Directory
 import System.Environment
 import Test.Hspec
@@ -15,6 +19,13 @@ spec = do
       makeExecutable "exe"
       run "./exe"
       doesFileExist "file" `shouldReturn` True
+
+    it "throws when executable cannot be found" $ do
+      run "./exe"
+        `shouldThrow` ( \(e :: IOException) ->
+                          ioe_filename e == Just "./exe"
+                            && ioe_type e == NoSuchThing
+                      )
 
 makeExecutable :: FilePath -> IO ()
 makeExecutable file = do
