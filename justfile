@@ -20,6 +20,10 @@ hpack:
 
 test: hpack
   cabal test --test-show-details=streaming
+  just doctest
+
+doctest:
+  doctest -isrc test/DocTest/*.hs
 
 watch *args="": hpack
   ghcid --command "cabal repl test:spec" --test ':main {{ args }}' --warnings

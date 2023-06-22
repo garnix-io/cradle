@@ -14,7 +14,13 @@
         cradle =
           pkgs.haskell.lib.overrideCabal
             (ourHaskell.callCabal2nix "cradle" src { })
-            (_: { preBuild = setupEnvironment; });
+            (old: {
+              preBuild = setupEnvironment;
+              buildDepends = (old.buildDepends or [ ]) ++ [ pkgs.just ourHaskell.doctest ];
+              postCheck = ''
+                just doctest
+              '';
+            });
       in
       {
         packages.default = cradle;
@@ -34,6 +40,8 @@
               ourHaskell.cabal2nix
               nixpkgs-fmt
               nil
+              ourHaskell.doctest
+              just
             ];
           };
         };
