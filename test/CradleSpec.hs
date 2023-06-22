@@ -54,6 +54,16 @@ spec = do
       runIdentityT $ do
         run "./exe"
 
+    it "allows to pass in an argument" $ do
+      writeBashScript "exe" "echo $1 > file"
+      run ("./exe", "foo")
+      readFile "file" `shouldReturn` "foo\n"
+
+    it "allows to pass in multiple arguments" $ do
+      writeBashScript "exe" "echo $1 > file; echo $2 >> file"
+      run ("./exe", ["foo", "bar"])
+      readFile "file" `shouldReturn` "foo\nbar\n"
+
 writeBashScript :: FilePath -> String -> IO ()
 writeBashScript file code = do
   bashPath <- getEnv "BASH_PATH"
