@@ -27,3 +27,5 @@ tests:
 library:
   source-dirs:
     - src
+  exposed-modules:
+    - Cradle

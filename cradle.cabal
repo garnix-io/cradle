@@ -12,6 +12,8 @@ library
   exposed-modules:
       Cradle
   other-modules:
+      Cradle.Output
+      Cradle.ProcessConfiguration
       Paths_cradle
   hs-source-dirs:
       src
@@ -28,6 +30,8 @@ test-suite spec
       CradleSpec
       DocTest.TypeErrors
       Cradle
+      Cradle.Output
+      Cradle.ProcessConfiguration
       Paths_cradle
   hs-source-dirs:
       test
