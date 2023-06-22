@@ -1,0 +1,42 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.35.2.
+--
+-- see: https://github.com/sol/hpack
+
+name:           cradle
+version:        0.0.0.0
+build-type:     Simple
+
+library
+  exposed-modules:
+      Cradle
+  other-modules:
+      Paths_cradle
+  hs-source-dirs:
+      src
+  ghc-options: -Wall -Wno-name-shadowing
+  build-depends:
+      base
+    , process
+  default-language: Haskell2010
+
+test-suite spec
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  other-modules:
+      CradleSpec
+      Cradle
+      Paths_cradle
+  hs-source-dirs:
+      test
+      src
+  ghc-options: -Wall -Wno-name-shadowing -fdefer-typed-holes
+  build-depends:
+      base
+    , directory
+    , hspec
+    , hspec-discover
+    , mockery
+    , process
+  default-language: Haskell2010

@@ -1,0 +1,28 @@
+name: cradle
+version: 0.0.0.0
+
+dependencies:
+  - base
+  - process
+
+ghc-options:
+  - -Wall
+  - -Wno-name-shadowing
+
+tests:
+  spec:
+    main: Spec.hs
+    source-dirs:
+      - test
+      - src
+    ghc-options:
+      - -fdefer-typed-holes
+    dependencies:
+      - directory
+      - hspec
+      - hspec-discover
+      - mockery
+
+library:
+  source-dirs:
+    - src
