@@ -3,6 +3,7 @@
 module CradleSpec where
 
 import Control.Exception
+import Control.Monad.Trans.Identity
 import Cradle
 import GHC.IO.Exception
 import System.Directory
@@ -47,6 +48,11 @@ spec = do
       writeBashScript "exe" "exit 42"
       run "./exe"
         `shouldThrowShow` "command failed with exitcode 42: ./exe"
+
+    it "allows to be run in MonadIO contexts" $ do
+      writeBashScript "exe" "true"
+      runIdentityT $ do
+        run "./exe"
 
 writeBashScript :: FilePath -> String -> IO ()
 writeBashScript file code = do

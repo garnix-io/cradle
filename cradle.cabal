@@ -39,4 +39,5 @@ test-suite spec
     , hspec-discover
     , mockery
     , process
+    , transformers
   default-language: Haskell2010

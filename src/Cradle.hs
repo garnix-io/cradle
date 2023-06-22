@@ -1,11 +1,12 @@
 module Cradle where
 
 import Control.Exception
+import Control.Monad.IO.Class (MonadIO, liftIO)
 import System.Exit
 import System.Process
 
-run :: String -> IO ()
-run executable = do
+run :: (MonadIO m) => String -> m ()
+run executable = liftIO $ do
   let cp =
         (proc executable [])
           { std_out = Inherit,
