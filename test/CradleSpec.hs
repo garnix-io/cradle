@@ -45,11 +45,6 @@ spec = do
                               && ioe_type e == NoSuchThing
                         )
 
-      it "throws when the exitcode is not 0" $ do
-        writeBashScript "exe" "exit 42"
-        run_ "./exe"
-          `shouldThrowShow` "command failed with exitcode 42: ./exe"
-
     it "allows to be run in MonadIO contexts" $ do
       writeBashScript "exe" "true"
       runIdentityT $ do
@@ -99,6 +94,21 @@ spec = do
           writeBashScript "exe" "echo '  foo   '"
           StdoutTrimmed output <- run "./exe" "foo"
           output `shouldBe` "foo"
+
+    describe "exitcodes" $ do
+      it "throws when the exitcode is not 0" $ do
+        writeBashScript "exe" "exit 42"
+        run_ "./exe"
+          `shouldThrowShow` "command failed with exitcode 42: ./exe"
+
+      it "doesn't throw when the exitcode is captured" $ do
+        writeBashScript "exe" "exit 42"
+        exitCode <- run "./exe"
+        exitCode `shouldBe` ExitFailure 42
+
+      it "captures success exitcodes" $ do
+        writeBashScript "exe" "true"
+        run "./exe" `shouldReturn` ExitSuccess
 
 writeBashScript :: FilePath -> String -> IO ()
 writeBashScript file code = do

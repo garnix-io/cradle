@@ -2,7 +2,7 @@
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE LambdaCase #-}
 
-module Cradle.Input where
+module Cradle.Input (Input (..)) where
 
 import Cradle.ProcessConfiguration
 import Data.List

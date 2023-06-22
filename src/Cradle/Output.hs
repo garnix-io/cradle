@@ -1,7 +1,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE InstanceSigs #-}
 
-module Cradle.Output where
+module Cradle.Output (Output (..), StdoutTrimmed (..)) where
 
 import Control.Concurrent
 import Control.Exception
@@ -19,7 +19,7 @@ instance Output () where
   runAndGetOutput config = do
     (_, _, _, handle) <- createProcess $ toCreateProcess config
     exitCode <- waitForProcess handle
-    handleExitCode config exitCode
+    throwWhenNonZero config exitCode
 
 instance Output String where
   runAndGetOutput :: ProcessConfiguration -> IO String
@@ -34,7 +34,7 @@ instance Output String where
       forkIO $
         hGetContents stdout >>= putMVar stdoutMVar
     exitCode <- waitForProcess handle
-    handleExitCode config exitCode
+    throwWhenNonZero config exitCode
     readMVar stdoutMVar
 
 newtype StdoutTrimmed = StdoutTrimmed String
@@ -46,8 +46,14 @@ instance Output StdoutTrimmed where
     where
       trim = dropWhile isSpace . reverse . dropWhile isSpace . reverse
 
-handleExitCode :: ProcessConfiguration -> ExitCode -> IO ()
-handleExitCode (ProcessConfiguration executable _) exitCode = do
+instance Output ExitCode where
+  runAndGetOutput :: ProcessConfiguration -> IO ExitCode
+  runAndGetOutput config = do
+    (_, _, _, handle) <- createProcess $ toCreateProcess config
+    waitForProcess handle
+
+throwWhenNonZero :: ProcessConfiguration -> ExitCode -> IO ()
+throwWhenNonZero (ProcessConfiguration executable _) exitCode = do
   case exitCode of
     ExitSuccess -> return ()
     ExitFailure exitCode -> do

@@ -10,8 +10,9 @@
 
 module Cradle
   ( module Cradle,
-    module Cradle.Input,
-    module Cradle.Output,
+    Output,
+    Input,
+    StdoutTrimmed (..),
   )
 where
 
