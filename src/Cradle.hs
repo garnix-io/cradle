@@ -55,7 +55,7 @@ instance {-# OVERLAPS #-} (MonadIO m, Output a) => RunProcessConfig (m a) where
   runProcessConfig :: Maybe ProcessConfiguration -> m a
   runProcessConfig = \case
     Nothing -> liftIO $ throwIO $ ErrorCall "should be impossible, see DefinesExecutable"
-    Just config -> liftIO $ out config
+    Just config -> liftIO $ runAndGetOutput config
 
 class ProcessOption option where
   configureProcess :: option -> Maybe ProcessConfiguration -> Maybe ProcessConfiguration
@@ -79,18 +79,18 @@ instance {-# OVERLAPS #-} (ProcessOption option) => ProcessOption [option] where
     foldl' (flip configureProcess) config list
 
 class Output output where
-  out :: ProcessConfiguration -> IO output
+  runAndGetOutput :: ProcessConfiguration -> IO output
 
 instance Output () where
-  out :: ProcessConfiguration -> IO ()
-  out config = do
+  runAndGetOutput :: ProcessConfiguration -> IO ()
+  runAndGetOutput config = do
     (_, _, _, handle) <- createProcess $ toCreateProcess config
     exitCode <- waitForProcess handle
     handleExitCode config exitCode
 
 instance Output String where
-  out :: ProcessConfiguration -> IO String
-  out config = do
+  runAndGetOutput :: ProcessConfiguration -> IO String
+  runAndGetOutput config = do
     (_, Just stdout, _, handle) <-
       createProcess
         (toCreateProcess config)
@@ -107,9 +107,9 @@ instance Output String where
 newtype StdoutTrimmed = StdoutTrimmed String
 
 instance Output StdoutTrimmed where
-  out :: ProcessConfiguration -> IO StdoutTrimmed
-  out config = do
-    StdoutTrimmed . trim <$> out config
+  runAndGetOutput :: ProcessConfiguration -> IO StdoutTrimmed
+  runAndGetOutput config = do
+    StdoutTrimmed . trim <$> runAndGetOutput config
     where
       trim = dropWhile isSpace . reverse . dropWhile isSpace . reverse
 
