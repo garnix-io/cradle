@@ -14,9 +14,7 @@ spec :: Spec
 spec = do
   around_ inTempDirectory $ do
     it "runs simple commands" $ do
-      bashPath <- getEnv "BASH_PATH"
-      writeFile "exe" ("#!" <> bashPath <> "\ntouch ./file")
-      makeExecutable "exe"
+      writeBashScript "exe" "touch file"
       run "./exe"
       doesFileExist "file" `shouldReturn` True
 
@@ -46,9 +44,26 @@ spec = do
                       )
 
     it "throws when the exitcode is not 0" $ do
-      pending
+      writeBashScript "exe" "exit 42"
+      run "./exe"
+        `shouldThrowShow` "command failed with exitcode 42: ./exe"
+
+writeBashScript :: FilePath -> String -> IO ()
+writeBashScript file code = do
+  bashPath <- getEnv "BASH_PATH"
+  writeFile file ("#!" <> bashPath <> "\n" <> code)
+  makeExecutable file
 
 makeExecutable :: FilePath -> IO ()
 makeExecutable file = do
   permissions <- getPermissions file
   setPermissions file $ setOwnerExecutable True permissions
+
+shouldThrowShow :: IO a -> String -> IO ()
+shouldThrowShow action expected = do
+  result <-
+    (action >> return Nothing)
+      `catch` (\(e :: SomeException) -> return $ Just e)
+  case result of
+    Nothing -> fail $ "action didn't throw: " <> expected
+    Just e -> show e `shouldBe` expected

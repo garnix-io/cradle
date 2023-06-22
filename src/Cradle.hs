@@ -1,5 +1,7 @@
 module Cradle where
 
+import Control.Exception
+import System.Exit
 import System.Process
 
 run :: String -> IO ()
@@ -10,5 +12,13 @@ run executable = do
             std_err = Inherit
           }
   (_, _, _, handle) <- createProcess cp
-  _ <- waitForProcess handle
-  return ()
+  exitCode <- waitForProcess handle
+  case exitCode of
+    ExitSuccess -> return ()
+    ExitFailure exitCode ->
+      throwIO $
+        ErrorCall $
+          "command failed with exitcode "
+            <> show exitCode
+            <> ": "
+            <> executable
