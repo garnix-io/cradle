@@ -45,6 +45,9 @@ spec = do
                               && ioe_type e == NoSuchThing
                         )
 
+      it "throws when no executable is given" $ do
+        pending
+
     it "allows to be run in MonadIO contexts" $ do
       writeBashScript "exe" "true"
       runIdentityT $ do

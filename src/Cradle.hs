@@ -26,7 +26,6 @@ import Control.Monad.IO.Class (MonadIO, liftIO)
 import Cradle.Input
 import Cradle.Output
 import Cradle.ProcessConfiguration
-import Data.Kind
 import System.Exit (ExitCode (..))
 
 -- | Runs a child process and retrieves a result from it.
@@ -47,7 +46,7 @@ import System.Exit (ExitCode (..))
 --
 -- If you don't want to retrieve any information from a child process, you can use `run_` (or make the output type '()').
 --
--- For more information on available output types, see 'Output'.
+-- See 'Cradle.Output' for all available output types.
 --
 -- == Inputs
 --
@@ -58,6 +57,8 @@ import System.Exit (ExitCode (..))
 -- foo bar
 -- >>> run_ "echo"
 -- <BLANKLINE>
+--
+-- See 'Input' for all available input types.
 --
 -- == No Automatic Splitting of Strings, No Shells
 --
