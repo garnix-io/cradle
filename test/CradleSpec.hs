@@ -70,6 +70,10 @@ spec = do
         run_ "./exe" "foo" "bar"
         readFile "file" `shouldReturn` "foo\nbar\n"
 
+      it "allows to split strings in haskell" $ do
+        StdoutTrimmed output <- run $ words "echo foo"
+        output `shouldBe` "foo"
+
     describe "capturing stdout" $ do
       it "allows to capture stdout" $ do
         writeBashScript "exe" "echo output"

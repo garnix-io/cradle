@@ -27,17 +27,7 @@ import Cradle.Input
 import Cradle.Output
 import Cradle.ProcessConfiguration
 import Data.Kind
-import GHC.TypeError (ErrorMessage (..), TypeError)
 import System.Exit (ExitCode (..))
-
-class ReturnsUnit a
-
-instance {-# OVERLAPPING #-} (ReturnsUnit b) => ReturnsUnit (a -> b)
-
-instance {-# OVERLAPPABLE #-} (Monad m, a ~ ()) => ReturnsUnit (m a)
-
-type Runnable runnable =
-  (RunProcessConfig runnable, Check (DefinesExecutable runnable))
 
 -- | Runs a child process and retrieves a result from it.
 --
@@ -79,10 +69,27 @@ type Runnable runnable =
 -- This is trying to run an executable with the file name @"echo foo"@, which doesn't exist.
 -- You can split words in haskell though:
 --
--- >>> run_ "echo" (words "foo bar")
--- foo bar
+-- >>> run_ $ words "echo foo"
+-- foo
 run :: (Runnable runnable) => runnable
 run = runProcessConfig Nothing
+
+class Runnable runnable where
+  runProcessConfig :: Maybe ProcessConfiguration -> runnable
+
+instance
+  (Input input, Runnable runnable) =>
+  Runnable (input -> runnable)
+  where
+  runProcessConfig :: Maybe ProcessConfiguration -> input -> runnable
+  runProcessConfig createProcess input =
+    runProcessConfig (configureProcess input createProcess)
+
+instance {-# OVERLAPS #-} forall m a. (MonadIO m, Output a) => Runnable (m a) where
+  runProcessConfig :: Maybe ProcessConfiguration -> m a
+  runProcessConfig = \case
+    Nothing -> liftIO $ throwIO $ ErrorCall "should be impossible, see DefinesExecutable"
+    Just config -> liftIO $ runAndGetOutput config
 
 -- | Same as `run`, but always returns '()'.
 --
@@ -93,42 +100,8 @@ run_ ::
   runnable
 run_ = run
 
-class RunProcessConfig runnable where
-  runProcessConfig :: Maybe ProcessConfiguration -> runnable
+class ReturnsUnit a
 
-instance
-  (Input input, RunProcessConfig runnable) =>
-  RunProcessConfig (input -> runnable)
-  where
-  runProcessConfig :: Maybe ProcessConfiguration -> input -> runnable
-  runProcessConfig createProcess input =
-    runProcessConfig (configureProcess input createProcess)
+instance {-# OVERLAPPING #-} (ReturnsUnit b) => ReturnsUnit (a -> b)
 
-instance {-# OVERLAPS #-} forall m a. (MonadIO m, Output a) => RunProcessConfig (m a) where
-  runProcessConfig :: Maybe ProcessConfiguration -> m a
-  runProcessConfig = \case
-    Nothing -> liftIO $ throwIO $ ErrorCall "should be impossible, see DefinesExecutable"
-    Just config -> liftIO $ runAndGetOutput config
-
-type family Check (bool :: Bool) :: Constraint where
-  Check True = ()
-  Check False =
-    TypeError
-      ( Text
-          "`run` has to be passed at least one string as the executable"
-      )
-
-type family DefinesExecutable (runnable :: Type) :: Bool where
-  DefinesExecutable (input -> runnable) =
-    ContainsExecutable input || DefinesExecutable runnable
-  DefinesExecutable runnable = False
-
-type family ContainsExecutable (input :: Type) :: Bool where
-  ContainsExecutable String = True
-  ContainsExecutable (a, b) =
-    ContainsExecutable a || ContainsExecutable b
-  ContainsExecutable input = False
-
-type family (||) (a :: Bool) (b :: Bool) :: Bool where
-  False || False = False
-  a || b = True
+instance {-# OVERLAPPABLE #-} (Monad m, a ~ ()) => ReturnsUnit (m a)

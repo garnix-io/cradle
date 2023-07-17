@@ -29,7 +29,6 @@ test-suite spec
   main-is: Spec.hs
   other-modules:
       CradleSpec
-      DocTest.TypeErrors
       Cradle
       Cradle.Input
       Cradle.Output
