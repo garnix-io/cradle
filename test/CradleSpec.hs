@@ -110,7 +110,7 @@ spec = do
         writeBashScript "exe" "true"
         run "./exe" `shouldReturn` ExitSuccess
 
-      xit "allows to capture exitcodes and stdout" $ do
+      it "allows to capture exitcodes and stdout" $ do
         writeBashScript "exe" "echo foo; exit 42"
         (exitCode, StdoutTrimmed stdout) <- run "./exe"
         stdout `shouldBe` "foo"

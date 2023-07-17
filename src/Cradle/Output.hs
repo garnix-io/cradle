@@ -4,6 +4,7 @@
 
 module Cradle.Output (runAndGetOutput, Output (..), StdoutTrimmed (..)) where
 
+import Control.Arrow ((>>>))
 import Cradle.ProcessConfiguration
 import Data.Char
 import Data.Proxy
@@ -16,10 +17,12 @@ class Output output where
   configure :: Proxy output -> ProcessConfiguration -> ProcessConfiguration
   extractOutput :: ProcessResult -> output
 
-instance Output (a, b) where
+instance (Output a, Output b) => Output (a, b) where
   configure :: Proxy (a, b) -> ProcessConfiguration -> ProcessConfiguration
-  configure Proxy = undefined
-  extractOutput = undefined
+  configure Proxy =
+    configure (Proxy :: Proxy a)
+      >>> configure (Proxy :: Proxy b)
+  extractOutput result = (extractOutput result, extractOutput result)
 
 instance Output () where
   configure :: Proxy () -> ProcessConfiguration -> ProcessConfiguration
@@ -31,7 +34,7 @@ instance Output String where
   configure Proxy config = config {captureStdout = True}
   extractOutput result =
     case stdout result of
-      Nothing -> error "impossible"
+      Nothing -> error "impossible: stdout not captured"
       Just stdout -> stdout
 
 newtype StdoutTrimmed = StdoutTrimmed String
