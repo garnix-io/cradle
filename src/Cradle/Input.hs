@@ -11,12 +11,9 @@ class Input input where
   configureProcess :: input -> Maybe ProcessConfiguration -> Maybe ProcessConfiguration
 
 instance Input String where
-  configureProcess :: String -> Maybe ProcessConfiguration -> Maybe ProcessConfiguration
   configureProcess s = \case
-    Nothing ->
-      Just $ ProcessConfiguration s []
-    Just (ProcessConfiguration exe args) ->
-      Just $ ProcessConfiguration exe (args ++ [s])
+    Nothing -> Just $ defaultProcessConfiguration s
+    Just config -> Just $ addArgument s config
 
 instance Input () where
   configureProcess () = id

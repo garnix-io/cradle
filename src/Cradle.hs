@@ -4,6 +4,7 @@
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
@@ -22,6 +23,7 @@ import Cradle.Input
 import Cradle.Output
 import Cradle.ProcessConfiguration
 import Data.Kind
+import Data.Proxy
 import GHC.TypeError (ErrorMessage (..), TypeError)
 
 run_ ::
@@ -52,7 +54,7 @@ instance
   runProcessConfig createProcess input =
     runProcessConfig (configureProcess input createProcess)
 
-instance {-# OVERLAPS #-} (MonadIO m, Output a) => RunProcessConfig (m a) where
+instance {-# OVERLAPS #-} forall m a. (MonadIO m, Output a) => RunProcessConfig (m a) where
   runProcessConfig :: Maybe ProcessConfiguration -> m a
   runProcessConfig = \case
     Nothing -> liftIO $ throwIO $ ErrorCall "should be impossible, see DefinesExecutable"

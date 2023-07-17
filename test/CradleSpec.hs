@@ -102,13 +102,19 @@ spec = do
           `shouldThrowShow` "command failed with exitcode 42: ./exe"
 
       it "doesn't throw when the exitcode is captured" $ do
-        writeBashScript "exe" "exit 42"
+        writeBashScript "exe" "echo foo; exit 42"
         exitCode <- run "./exe"
         exitCode `shouldBe` ExitFailure 42
 
       it "captures success exitcodes" $ do
         writeBashScript "exe" "true"
         run "./exe" `shouldReturn` ExitSuccess
+
+      xit "allows to capture exitcodes and stdout" $ do
+        writeBashScript "exe" "echo foo; exit 42"
+        (exitCode, StdoutTrimmed stdout) <- run "./exe"
+        stdout `shouldBe` "foo"
+        exitCode `shouldBe` ExitFailure 42
 
 writeBashScript :: FilePath -> String -> IO ()
 writeBashScript file code = do
