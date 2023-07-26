@@ -26,14 +26,13 @@ import Control.Monad.IO.Class (MonadIO, liftIO)
 import Cradle.Input
 import Cradle.Output
 import Cradle.ProcessConfiguration
-import Data.Kind
 import System.Exit (ExitCode (..))
 
 -- | Runs a child process and retrieves a result from it.
 --
 -- For example:
 --
--- >>> stdout :: String <- run "echo" "Hello, World!"
+-- >>> stdout <- run "echo" "Hello, World!" :: IO String
 -- >>> print stdout
 -- "Hello, World!\n"
 --
