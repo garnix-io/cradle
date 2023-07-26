@@ -32,8 +32,8 @@ import System.Exit (ExitCode (..))
 --
 -- For example:
 --
--- >>> stdout <- run "echo" "Hello, World!" :: IO String
--- >>> print stdout
+-- >>> output <- run "echo" "Hello, World!" :: IO String
+-- >>> print output
 -- "Hello, World!\n"
 --
 -- == Outputs
