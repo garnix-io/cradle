@@ -5,6 +5,8 @@ module CradleSpec where
 import Control.Exception
 import Control.Monad.Trans.Identity
 import Cradle
+import Data.String.Conversions
+import Data.Text (Text)
 import GHC.IO.Exception
 import System.Directory
 import System.Environment
@@ -72,6 +74,10 @@ spec = do
 
       it "allows to split strings in haskell" $ do
         StdoutTrimmed output <- run $ words "echo foo"
+        output `shouldBe` "foo"
+
+      it "allows Text as arguments" $ do
+        StdoutTrimmed output <- run "echo" (cs "foo" :: Text)
         output `shouldBe` "foo"
 
     describe "capturing stdout" $ do

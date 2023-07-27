@@ -4,6 +4,7 @@ version: 0.0.0.0
 dependencies:
   - base
   - process
+  - text
 
 ghc-options:
   - -Wall
@@ -22,6 +23,7 @@ tests:
       - hspec
       - hspec-discover
       - mockery
+      - string-conversions
       - transformers
 
 library:

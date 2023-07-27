@@ -22,6 +22,7 @@ library
   build-depends:
       base
     , process
+    , text
   default-language: Haskell2010
 
 test-suite spec
@@ -46,5 +47,7 @@ test-suite spec
     , hspec-discover
     , mockery
     , process
+    , string-conversions
+    , text
     , transformers
   default-language: Haskell2010
