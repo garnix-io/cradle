@@ -1,0 +1,6 @@
+cradle:
+  cabal:
+    - path: "src"
+      component: "cradle:lib:cradle"
+    - path: "test"
+      component: "cradle:test:spec"
