@@ -48,7 +48,7 @@ spec = do
     it "allows to be run in MonadIO contexts" $ do
       writeBashScript "exe" "true"
       runIdentityT $ do
-        _ :: String <- run "./exe"
+        _ :: StdoutUntrimmed <- run "./exe"
         run_ "./exe"
 
     describe "arguments" $ do
@@ -77,15 +77,15 @@ spec = do
     describe "capturing stdout" $ do
       it "allows to capture stdout" $ do
         writeBashScript "exe" "echo output"
-        stdout <- run "./exe"
+        StdoutUntrimmed stdout <- run "./exe"
         stdout `shouldBe` "output\n"
 
       it "allows to capture stdout *and* pass in arguments" $ do
         writeBashScript "exe" "echo $1"
-        output <- run "./exe" "foo"
+        StdoutUntrimmed output <- run "./exe" "foo"
         output `shouldBe` "foo\n"
         writeBashScript "exe" "echo $1; echo $2"
-        output <- run "./exe" "foo" "bar"
+        StdoutUntrimmed output <- run "./exe" "foo" "bar"
         output `shouldBe` "foo\nbar\n"
 
       describe "StdoutTrimmed" $ do

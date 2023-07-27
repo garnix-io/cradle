@@ -16,6 +16,7 @@ module Cradle
 
     -- * Possible Output
     Output,
+    StdoutUntrimmed (..),
     StdoutTrimmed (..),
     ExitCode (..),
   )
@@ -26,16 +27,15 @@ import Control.Monad.IO.Class (MonadIO, liftIO)
 import Cradle.Input
 import Cradle.Output
 import Cradle.ProcessConfiguration
-import Data.Kind
 import System.Exit (ExitCode (..))
 
 -- | Runs a child process and retrieves a result from it.
 --
 -- For example:
 --
--- >>> stdout :: String <- run "echo" "Hello, World!"
+-- >>> StdoutTrimmed stdout <- run "echo" "Hello, World!"
 -- >>> print stdout
--- "Hello, World!\n"
+-- "Hello, World!"
 --
 -- == Outputs
 --
