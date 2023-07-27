@@ -29,6 +29,7 @@ test-suite spec
   main-is: Spec.hs
   other-modules:
       CradleSpec
+      OverloadedStringsSpec
       Cradle
       Cradle.Input
       Cradle.Output

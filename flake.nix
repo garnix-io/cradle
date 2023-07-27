@@ -9,6 +9,7 @@
         ourHaskell = pkgs.haskell.packages.ghc945;
         setupEnvironment = ''
           export BASH_PATH=${pkgs.bash}/bin/bash
+          export NIX_GHC=${ourHaskell.ghc.withPackages (p: cradle.buildInputs)}/bin/ghc
         '';
         src = ./.;
         cradle =
