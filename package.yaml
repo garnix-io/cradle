@@ -23,6 +23,7 @@ tests:
       - hspec
       - hspec-discover
       - mockery
+      - silently
       - string-conversions
       - transformers
 

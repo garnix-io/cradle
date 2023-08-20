@@ -47,6 +47,7 @@ test-suite spec
     , hspec-discover
     , mockery
     , process
+    , silently
     , string-conversions
     , text
     , transformers

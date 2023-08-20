@@ -10,6 +10,7 @@ import Data.Text (Text)
 import GHC.IO.Exception
 import System.Directory
 import System.Environment
+import System.IO.Silently
 import Test.Hspec
 import Test.Mockery.Directory
 
@@ -95,6 +96,18 @@ spec = do
         output `shouldBe` "foo\n"
         StdoutUntrimmed output <- run "./exe" "foo" "bar"
         output `shouldBe` "foo bar\n"
+
+      it "relays stdout when it's not captured (by default)" $ do
+        writePythonScript "exe" "print('foo')"
+        output <- capture_ $ run_ "./exe"
+        output `shouldBe` "foo\n"
+
+      it "does not relay stdout when it's captured (by default)" $ do
+        writePythonScript "exe" "print('foo')"
+        output <- capture_ $ do
+          StdoutUntrimmed _ <- run "./exe"
+          return ()
+        output `shouldBe` ""
 
       describe "StdoutTrimmed" $ do
         it "allows to capture the stripped stdout" $ do
