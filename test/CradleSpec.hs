@@ -17,7 +17,7 @@ spec :: Spec
 spec = do
   around_ inTempDirectory $ do
     it "runs simple commands" $ do
-      writeBashScript "exe" "touch file"
+      writePythonScript "exe" "open('file', 'w').write('')"
       run_ "./exe"
       doesFileExist "file" `shouldReturn` True
 
@@ -48,29 +48,32 @@ spec = do
                         )
 
     it "allows to be run in MonadIO contexts" $ do
-      writeBashScript "exe" "true"
+      writePythonScript "exe" "pass"
       runIdentityT $ do
         _ :: StdoutUntrimmed <- run "./exe"
         run_ "./exe"
 
     describe "arguments" $ do
+      let writeArgumentWriter = do
+            writePythonScript "exe" $
+              "open('file', 'w').write(' '.join(sys.argv[1:]))"
+
       it "allows to pass in an argument" $ do
-        writeBashScript "exe" "echo $1 > file"
+        writeArgumentWriter
         run_ ("./exe", "foo")
-        readFile "file" `shouldReturn` "foo\n"
+        readFile "file" `shouldReturn` "foo"
 
       it "allows to pass in multiple arguments" $ do
-        writeBashScript "exe" "echo $1 > file; echo $2 >> file"
+        writeArgumentWriter
         run_ ("./exe", ["foo", "bar"])
-        readFile "file" `shouldReturn` "foo\nbar\n"
+        readFile "file" `shouldReturn` "foo bar"
 
       it "provides nice syntax for multiple arguments" $ do
-        writeBashScript "exe" "echo $1 > file"
+        writeArgumentWriter
         run_ "./exe" "foo"
-        readFile "file" `shouldReturn` "foo\n"
-        writeBashScript "exe" "echo $1 > file; echo $2 >> file"
+        readFile "file" `shouldReturn` "foo"
         run_ "./exe" "foo" "bar"
-        readFile "file" `shouldReturn` "foo\nbar\n"
+        readFile "file" `shouldReturn` "foo bar"
 
       it "allows to split strings in haskell" $ do
         StdoutTrimmed output <- run $ words "echo foo"
@@ -82,54 +85,53 @@ spec = do
 
     describe "capturing stdout" $ do
       it "allows to capture stdout" $ do
-        writeBashScript "exe" "echo output"
+        writePythonScript "exe" "print('output')"
         StdoutUntrimmed stdout <- run "./exe"
         stdout `shouldBe` "output\n"
 
       it "allows to capture stdout *and* pass in arguments" $ do
-        writeBashScript "exe" "echo $1"
+        writePythonScript "exe" "print(' '.join(sys.argv[1:]))"
         StdoutUntrimmed output <- run "./exe" "foo"
         output `shouldBe` "foo\n"
-        writeBashScript "exe" "echo $1; echo $2"
         StdoutUntrimmed output <- run "./exe" "foo" "bar"
-        output `shouldBe` "foo\nbar\n"
+        output `shouldBe` "foo bar\n"
 
       describe "StdoutTrimmed" $ do
         it "allows to capture the stripped stdout" $ do
-          writeBashScript "exe" "echo foo"
+          writePythonScript "exe" "print('foo')"
           StdoutTrimmed output <- run "./exe" "foo"
           output `shouldBe` "foo"
 
         it "strips leading and trailing spaces and newlines" $ do
-          writeBashScript "exe" "echo '  foo   '"
+          writePythonScript "exe" "print('  foo   ')"
           StdoutTrimmed output <- run "./exe" "foo"
           output `shouldBe` "foo"
 
     describe "exitcodes" $ do
       it "throws when the exitcode is not 0" $ do
-        writeBashScript "exe" "exit 42"
+        writePythonScript "exe" "sys.exit(42)"
         run_ "./exe"
           `shouldThrowShow` "command failed with exitcode 42: ./exe"
 
       it "doesn't throw when the exitcode is captured" $ do
-        writeBashScript "exe" "echo foo; exit 42"
+        writePythonScript "exe" "sys.exit(42)"
         exitCode <- run "./exe"
         exitCode `shouldBe` ExitFailure 42
 
       it "captures success exitcodes" $ do
-        writeBashScript "exe" "true"
+        writePythonScript "exe" "pass"
         run "./exe" `shouldReturn` ExitSuccess
 
       it "allows to capture exitcodes and stdout" $ do
-        writeBashScript "exe" "echo foo; exit 42"
+        writePythonScript "exe" "print('foo'); sys.exit(42)"
         (exitCode, StdoutTrimmed stdout) <- run "./exe"
         stdout `shouldBe` "foo"
         exitCode `shouldBe` ExitFailure 42
 
-writeBashScript :: FilePath -> String -> IO ()
-writeBashScript file code = do
-  bashPath <- getEnv "BASH_PATH"
-  writeFile file ("#!" <> bashPath <> "\n" <> code)
+writePythonScript :: FilePath -> String -> IO ()
+writePythonScript file code = do
+  pythonPath <- getEnv "PYTHON_BIN_PATH"
+  writeFile file ("#!" <> pythonPath <> "\nimport sys\n" <> code)
   makeExecutable file
 
 makeExecutable :: FilePath -> IO ()
