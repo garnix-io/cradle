@@ -16,7 +16,7 @@ import Control.Monad
 import Data.ByteString (ByteString, hGetContents)
 import System.Exit
 import System.IO (Handle)
-import System.Process (CreateProcess (..), StdStream (..), createProcess, proc, waitForProcess)
+import System.Process (CreateProcess (..), StdStream (..), createProcess_, proc, waitForProcess)
 
 data ProcessConfiguration = ProcessConfiguration
   { executable :: Maybe String,
@@ -59,7 +59,7 @@ runProcess config = do
     Just executable -> return executable
     Nothing -> throwIO $ ErrorCall "Cradle: no executable given"
   (_, mStdout, mStderr, handle) <-
-    createProcess $
+    createProcess_ "Cradle.run" $
       (proc executable (arguments config))
         { std_out = if captureStdout config then CreatePipe else Inherit,
           std_err = case captureStderr config of

@@ -10,7 +10,7 @@ import Data.Text (Text)
 import GHC.IO.Exception
 import System.Directory
 import System.Environment
-import System.IO (hGetContents, stderr)
+import System.IO (hClose, hGetContents, hIsClosed, stderr)
 import System.IO.Silently
 import System.Process (createPipe)
 import Test.Hspec
@@ -149,13 +149,25 @@ spec = do
           writePythonScript "exe" "print('foo', file=sys.stderr)"
           (readEnd, writeEnd) <- createPipe
           run_ (StderrHandle writeEnd) "./exe"
+          hClose writeEnd
           hGetContents readEnd `shouldReturn` cs "foo\n"
 
         it "does not relay stderr when it's captured (by default)" $ do
           writePythonScript "exe" "print('foo', file=sys.stderr)"
           (_readEnd, writeEnd) <- createPipe
           stderr <- hCapture_ [stderr] $ run_ "./exe" (StderrHandle writeEnd)
+          hClose writeEnd
           stderr `shouldBe` ""
+
+        it "doesn't close the handle after running the process" $ do
+          writePythonScript "exe" "print(sys.argv[1], file=sys.stderr)"
+          (readEnd, writeEnd) <- createPipe
+          run_ (StderrHandle writeEnd) "./exe" "foo"
+          hIsClosed writeEnd `shouldReturn` False
+          hIsClosed readEnd `shouldReturn` False
+          run_ (StderrHandle writeEnd) "./exe" "bar"
+          hClose writeEnd
+          hGetContents readEnd `shouldReturn` cs "foo\nbar\n"
 
     it "allows to capture both stdout and stderr" $ do
       writePythonScript "exe" "print('out') ; print('err', file=sys.stderr)"

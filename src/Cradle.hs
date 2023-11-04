@@ -67,7 +67,7 @@ import System.Exit (ExitCode (..))
 -- `cradle` will not split any inputs by whitespace. So e.g. this doesn't work:
 --
 -- >>> run_ "echo foo"
--- *** Exception: echo foo: createProcess: posix_spawnp: does not exist (No such file or directory)
+-- *** Exception: echo foo: Cradle.run: posix_spawnp: does not exist (No such file or directory)
 --
 -- This is trying to run an executable with the file name @"echo foo"@, which doesn't exist.
 -- You can split words in haskell though:
