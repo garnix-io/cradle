@@ -51,6 +51,9 @@ spec = do
                               && ioe_type e == NoSuchThing
                         )
 
+      it "throws when no executable is given" $ do
+        run_ `shouldThrow` errorCall "Cradle: no executable given"
+
     it "allows to be run in MonadIO contexts" $ do
       writePythonScript "exe" "pass"
       runIdentityT $ do
@@ -145,7 +148,7 @@ spec = do
         it "allows to send stderr to a handle" $ do
           writePythonScript "exe" "print('foo', file=sys.stderr)"
           (readEnd, writeEnd) <- createPipe
-          run_ "./exe" (StderrHandle writeEnd)
+          run_ (StderrHandle writeEnd) "./exe"
           hGetContents readEnd `shouldReturn` cs "foo\n"
 
         it "does not relay stderr when it's captured (by default)" $ do

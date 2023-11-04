@@ -26,7 +26,6 @@ module Cradle
   )
 where
 
-import Control.Exception (ErrorCall (..), throwIO)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Cradle.Input
 import Cradle.Output
@@ -76,24 +75,22 @@ import System.Exit (ExitCode (..))
 -- >>> run_ $ words "echo foo"
 -- foo
 run :: (Runnable runnable) => runnable
-run = runProcessConfig Nothing
+run = runProcessConfig defaultProcessConfiguration
 
 class Runnable runnable where
-  runProcessConfig :: Maybe ProcessConfiguration -> runnable
+  runProcessConfig :: ProcessConfiguration -> runnable
 
 instance
   (Input input, Runnable runnable) =>
   Runnable (input -> runnable)
   where
-  runProcessConfig :: Maybe ProcessConfiguration -> input -> runnable
+  runProcessConfig :: ProcessConfiguration -> input -> runnable
   runProcessConfig createProcess input =
     runProcessConfig (configureProcess input createProcess)
 
 instance {-# OVERLAPS #-} forall m a. (MonadIO m, Output a) => Runnable (m a) where
-  runProcessConfig :: Maybe ProcessConfiguration -> m a
-  runProcessConfig = \case
-    Nothing -> liftIO $ throwIO $ ErrorCall "should be impossible, see DefinesExecutable"
-    Just config -> liftIO $ runAndGetOutput config
+  runProcessConfig :: ProcessConfiguration -> m a
+  runProcessConfig config = liftIO $ runAndGetOutput config
 
 -- | Same as `run`, but always returns '()'.
 --

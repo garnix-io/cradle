@@ -9,12 +9,12 @@ import Data.Text (Text, unpack)
 import System.IO (Handle)
 
 class Input input where
-  configureProcess :: input -> Maybe ProcessConfiguration -> Maybe ProcessConfiguration
+  configureProcess :: input -> ProcessConfiguration -> ProcessConfiguration
 
 instance Input String where
-  configureProcess s = \case
-    Nothing -> Just $ defaultProcessConfiguration s
-    Just config -> Just $ addArgument s config
+  configureProcess s config = case executable config of
+    Nothing -> config {executable = Just s}
+    Just _ -> addArgument s config
 
 instance Input Text where
   configureProcess s = configureProcess (unpack s)
@@ -32,5 +32,5 @@ instance {-# OVERLAPS #-} (Input input) => Input [input] where
 newtype StderrHandle = StderrHandle Handle
 
 instance Input StderrHandle where
-  configureProcess (StderrHandle handle) = fmap $ \config ->
+  configureProcess (StderrHandle handle) config =
     config {captureStderr = PipeStream handle}

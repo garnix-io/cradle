@@ -19,7 +19,7 @@ import System.IO (Handle)
 import System.Process (CreateProcess (..), StdStream (..), createProcess, proc, waitForProcess)
 
 data ProcessConfiguration = ProcessConfiguration
-  { executable :: String,
+  { executable :: Maybe String,
     arguments :: [String],
     throwOnError :: Bool,
     captureStdout :: Bool,
@@ -31,10 +31,10 @@ data StdStreamConfig
   | InheritStream
   | PipeStream Handle
 
-defaultProcessConfiguration :: String -> ProcessConfiguration
-defaultProcessConfiguration s =
+defaultProcessConfiguration :: ProcessConfiguration
+defaultProcessConfiguration =
   ProcessConfiguration
-    { executable = s,
+    { executable = Nothing,
       arguments = [],
       throwOnError = True,
       captureStdout = False,
@@ -55,9 +55,12 @@ data ProcessResult = ProcessResult
 
 runProcess :: ProcessConfiguration -> IO ProcessResult
 runProcess config = do
+  executable <- case executable config of
+    Just executable -> return executable
+    Nothing -> throwIO $ ErrorCall "Cradle: no executable given"
   (_, mStdout, mStderr, handle) <-
     createProcess $
-      (proc (executable config) (arguments config))
+      (proc executable (arguments config))
         { std_out = if captureStdout config then CreatePipe else Inherit,
           std_err = case captureStderr config of
             InheritStream -> Inherit
@@ -77,7 +80,7 @@ runProcess config = do
         hGetContents stderr >>= putMVar mvar
     return mvar
   exitCode <- waitForProcess handle
-  throwWhenNonZero config exitCode
+  throwWhenNonZero executable config exitCode
   stdout <- forM mStdoutMVar readMVar
   stderr <- forM mStderrMVar readMVar
   return $
@@ -87,8 +90,8 @@ runProcess config = do
         exitCode
       }
 
-throwWhenNonZero :: ProcessConfiguration -> ExitCode -> IO ()
-throwWhenNonZero config exitCode = do
+throwWhenNonZero :: String -> ProcessConfiguration -> ExitCode -> IO ()
+throwWhenNonZero executable config exitCode = do
   when (throwOnError config) $ do
     case exitCode of
       ExitSuccess -> return ()
@@ -98,4 +101,4 @@ throwWhenNonZero config exitCode = do
             "command failed with exitcode "
               <> show exitCode
               <> ": "
-              <> executable config
+              <> executable
