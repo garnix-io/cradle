@@ -78,24 +78,24 @@ spec = do
 
       it "allows to split strings in haskell" $ do
         StdoutTrimmed output <- run $ words "echo foo"
-        output `shouldBe` "foo"
+        output `shouldBe` cs "foo"
 
       it "allows Text as arguments" $ do
         StdoutTrimmed output <- run "echo" (cs "foo" :: Text)
-        output `shouldBe` "foo"
+        output `shouldBe` cs "foo"
 
     describe "capturing stdout" $ do
       it "allows to capture stdout" $ do
         writePythonScript "exe" "print('output')"
         StdoutUntrimmed stdout <- run "./exe"
-        stdout `shouldBe` "output\n"
+        stdout `shouldBe` cs "output\n"
 
       it "allows to capture stdout *and* pass in arguments" $ do
         writePythonScript "exe" "print(' '.join(sys.argv[1:]))"
         StdoutUntrimmed output <- run "./exe" "foo"
-        output `shouldBe` "foo\n"
+        output `shouldBe` cs "foo\n"
         StdoutUntrimmed output <- run "./exe" "foo" "bar"
-        output `shouldBe` "foo bar\n"
+        output `shouldBe` cs "foo bar\n"
 
       it "relays stdout when it's not captured (by default)" $ do
         writePythonScript "exe" "print('foo')"
@@ -113,12 +113,12 @@ spec = do
         it "allows to capture the stripped stdout" $ do
           writePythonScript "exe" "print('foo')"
           StdoutTrimmed output <- run "./exe" "foo"
-          output `shouldBe` "foo"
+          output `shouldBe` cs "foo"
 
         it "strips leading and trailing spaces and newlines" $ do
           writePythonScript "exe" "print('  foo   ')"
           StdoutTrimmed output <- run "./exe" "foo"
-          output `shouldBe` "foo"
+          output `shouldBe` cs "foo"
 
     describe "exitcodes" $ do
       it "throws when the exitcode is not 0" $ do
@@ -138,7 +138,7 @@ spec = do
       it "allows to capture exitcodes and stdout" $ do
         writePythonScript "exe" "print('foo'); sys.exit(42)"
         (exitCode, StdoutTrimmed stdout) <- run "./exe"
-        stdout `shouldBe` "foo"
+        stdout `shouldBe` cs "foo"
         exitCode `shouldBe` ExitFailure 42
 
 writePythonScript :: FilePath -> String -> IO ()

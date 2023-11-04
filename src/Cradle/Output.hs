@@ -12,9 +12,11 @@ where
 
 import Control.Arrow ((>>>))
 import Cradle.ProcessConfiguration
+import Data.ByteString.Char8
 import Data.Char
 import Data.Proxy
 import System.Exit
+import Prelude hiding (dropWhile)
 
 runAndGetOutput :: forall output. (Output output) => ProcessConfiguration -> IO output
 runAndGetOutput config = extractOutput <$> runProcess (configure (Proxy :: Proxy output) config)
@@ -34,7 +36,7 @@ instance Output () where
   extractOutput = const ()
 
 newtype StdoutUntrimmed = StdoutUntrimmed
-  { fromStdoutUntrimmed :: String
+  { fromStdoutUntrimmed :: ByteString
   }
 
 instance Output StdoutUntrimmed where
@@ -45,7 +47,7 @@ instance Output StdoutUntrimmed where
       Just stdout -> StdoutUntrimmed stdout
 
 newtype StdoutTrimmed = StdoutTrimmed
-  { fromStdoutTrimmed :: String
+  { fromStdoutTrimmed :: ByteString
   }
 
 instance Output StdoutTrimmed where
@@ -54,7 +56,7 @@ instance Output StdoutTrimmed where
     let StdoutUntrimmed output = extractOutput result
      in StdoutTrimmed $ trim $ output
     where
-      trim = dropWhile isSpace . reverse . dropWhile isSpace . reverse
+      trim = dropWhile isSpace . dropWhileEnd isSpace
 
 instance Output ExitCode where
   configure Proxy config = config {throwOnError = False}

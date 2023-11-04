@@ -12,8 +12,8 @@ where
 import Control.Concurrent
 import Control.Exception
 import Control.Monad
+import Data.ByteString (ByteString, hGetContents)
 import System.Exit
-import System.IO (hGetContents)
 import System.Process (CreateProcess (..), StdStream (..), createProcess, proc, waitForProcess)
 
 data ProcessConfiguration = ProcessConfiguration
@@ -34,7 +34,7 @@ addArgument arg config =
 
 data ProcessResult = ProcessResult
   { exitCode :: ExitCode,
-    stdout :: Maybe String
+    stdout :: Maybe ByteString
   }
 
 runProcess :: ProcessConfiguration -> IO ProcessResult
