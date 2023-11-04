@@ -7,6 +7,7 @@ module Cradle.Output
     Output (..),
     StdoutUntrimmed (..),
     StdoutTrimmed (..),
+    Stderr (..),
   )
 where
 
@@ -57,6 +58,17 @@ instance Output StdoutTrimmed where
      in StdoutTrimmed $ trim $ output
     where
       trim = dropWhile isSpace . dropWhileEnd isSpace
+
+newtype Stderr = Stderr
+  { fromStderr :: ByteString
+  }
+
+instance Output Stderr where
+  configure Proxy config = config {captureStderr = True}
+  extractOutput result =
+    case stderr result of
+      Nothing -> error "impossible: stderr not captured"
+      Just stderr -> Stderr stderr
 
 instance Output ExitCode where
   configure Proxy config = config {throwOnError = False}

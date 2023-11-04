@@ -10,6 +10,7 @@ import Data.Text (Text)
 import GHC.IO.Exception
 import System.Directory
 import System.Environment
+import System.IO (stderr)
 import System.IO.Silently
 import Test.Hspec
 import Test.Mockery.Directory
@@ -119,6 +120,29 @@ spec = do
           writePythonScript "exe" "print('  foo   ')"
           StdoutTrimmed output <- run "./exe" "foo"
           output `shouldBe` cs "foo"
+
+    describe "capture stderr" $ do
+      it "allows to capture stderr" $ do
+        writePythonScript "exe" "print('output', file=sys.stderr)"
+        Stderr stderr <- run "./exe"
+        stderr `shouldBe` cs "output\n"
+
+      it "relays stderr when it's not captured (by default)" $ do
+        writePythonScript "exe" "print('foo', file=sys.stderr)"
+        output <- hCapture_ [stderr] $ run_ "./exe"
+        output `shouldBe` "foo\n"
+
+      it "does not relay stderr when it's captured (by default)" $ do
+        writePythonScript "exe" "print('foo', file=sys.stderr)"
+        output <- hCapture_ [stderr] $ do
+          Stderr _ <- run "./exe"
+          return ()
+        output `shouldBe` ""
+
+    it "allows to capture both stdout and stderr" $ do
+      writePythonScript "exe" "print('out') ; print('err', file=sys.stderr)"
+      (StdoutUntrimmed out, Stderr err) <- run "./exe"
+      (out, err) `shouldBe` (cs "out\n", cs "err\n")
 
     describe "exitcodes" $ do
       it "throws when the exitcode is not 0" $ do
