@@ -10,10 +10,12 @@ import Data.Text (Text)
 import GHC.IO.Exception
 import System.Directory
 import System.Environment
-import System.IO (stderr)
+import System.IO (hGetContents, stderr)
 import System.IO.Silently
+import System.Process (createPipe)
 import Test.Hspec
 import Test.Mockery.Directory
+import Prelude hiding (getContents)
 
 spec :: Spec
 spec = do
@@ -138,6 +140,19 @@ spec = do
           Stderr _ <- run "./exe"
           return ()
         output `shouldBe` ""
+
+      describe "using handles" $ do
+        it "allows to send stderr to a handle" $ do
+          writePythonScript "exe" "print('foo', file=sys.stderr)"
+          (readEnd, writeEnd) <- createPipe
+          run_ "./exe" (StderrHandle writeEnd)
+          hGetContents readEnd `shouldReturn` cs "foo\n"
+
+        it "does not relay stderr when it's captured (by default)" $ do
+          writePythonScript "exe" "print('foo', file=sys.stderr)"
+          (_readEnd, writeEnd) <- createPipe
+          stderr <- hCapture_ [stderr] $ run_ "./exe" (StderrHandle writeEnd)
+          stderr `shouldBe` ""
 
     it "allows to capture both stdout and stderr" $ do
       writePythonScript "exe" "print('out') ; print('err', file=sys.stderr)"

@@ -1,5 +1,4 @@
 {-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 module Cradle.Output
@@ -71,7 +70,7 @@ newtype Stderr = Stderr
   }
 
 instance Output Stderr where
-  configure Proxy config = config {captureStderr = True}
+  configure Proxy config = config {captureStderr = CaptureStream}
   extractOutput result =
     case stderr result of
       Nothing -> error "impossible: stderr not captured"

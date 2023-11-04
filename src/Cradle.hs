@@ -2,7 +2,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE InstanceSigs #-}
-{-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -14,7 +13,11 @@ module Cradle
     run_,
     Runnable,
 
-    -- * Possible Output
+    -- * Possible Inputs
+    Input,
+    StderrHandle (..),
+
+    -- * Possible Outputs
     Output,
     StdoutUntrimmed (..),
     StdoutTrimmed (..),

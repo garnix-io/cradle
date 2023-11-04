@@ -1,12 +1,12 @@
 {-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE LambdaCase #-}
 
-module Cradle.Input (Input (..)) where
+module Cradle.Input (Input (..), StderrHandle (..)) where
 
 import Cradle.ProcessConfiguration
 import Data.List
 import Data.Text (Text, unpack)
+import System.IO (Handle)
 
 class Input input where
   configureProcess :: input -> Maybe ProcessConfiguration -> Maybe ProcessConfiguration
@@ -28,3 +28,9 @@ instance (Input a, Input b) => Input (a, b) where
 instance {-# OVERLAPS #-} (Input input) => Input [input] where
   configureProcess list config =
     foldl' (flip configureProcess) config list
+
+newtype StderrHandle = StderrHandle Handle
+
+instance Input StderrHandle where
+  configureProcess (StderrHandle handle) = fmap $ \config ->
+    config {captureStderr = PipeStream handle}

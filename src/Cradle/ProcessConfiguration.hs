@@ -2,6 +2,7 @@
 
 module Cradle.ProcessConfiguration
   ( ProcessConfiguration (..),
+    StdStreamConfig (..),
     defaultProcessConfiguration,
     addArgument,
     ProcessResult (..),
@@ -14,6 +15,7 @@ import Control.Exception
 import Control.Monad
 import Data.ByteString (ByteString, hGetContents)
 import System.Exit
+import System.IO (Handle)
 import System.Process (CreateProcess (..), StdStream (..), createProcess, proc, waitForProcess)
 
 data ProcessConfiguration = ProcessConfiguration
@@ -21,8 +23,13 @@ data ProcessConfiguration = ProcessConfiguration
     arguments :: [String],
     throwOnError :: Bool,
     captureStdout :: Bool,
-    captureStderr :: Bool
+    captureStderr :: StdStreamConfig
   }
+
+data StdStreamConfig
+  = CaptureStream
+  | InheritStream
+  | PipeStream Handle
 
 defaultProcessConfiguration :: String -> ProcessConfiguration
 defaultProcessConfiguration s =
@@ -31,7 +38,7 @@ defaultProcessConfiguration s =
       arguments = [],
       throwOnError = True,
       captureStdout = False,
-      captureStderr = False
+      captureStderr = InheritStream
     }
 
 addArgument :: String -> ProcessConfiguration -> ProcessConfiguration
@@ -52,7 +59,10 @@ runProcess config = do
     createProcess $
       (proc (executable config) (arguments config))
         { std_out = if captureStdout config then CreatePipe else Inherit,
-          std_err = if captureStderr config then CreatePipe else Inherit
+          std_err = case captureStderr config of
+            InheritStream -> Inherit
+            CaptureStream -> CreatePipe
+            PipeStream handle -> UseHandle handle
         }
   mStdoutMVar <- forM mStdout $ \stdout -> do
     mvar <- newEmptyMVar
