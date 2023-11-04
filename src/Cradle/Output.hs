@@ -26,15 +26,22 @@ class Output output where
   configure :: Proxy output -> ProcessConfiguration -> ProcessConfiguration
   extractOutput :: ProcessResult -> output
 
+instance Output () where
+  configure Proxy = id
+  extractOutput = const ()
+
 instance (Output a, Output b) => Output (a, b) where
   configure Proxy =
     configure (Proxy :: Proxy a)
       >>> configure (Proxy :: Proxy b)
   extractOutput result = (extractOutput result, extractOutput result)
 
-instance Output () where
-  configure Proxy = id
-  extractOutput = const ()
+instance (Output a, Output b, Output c) => Output (a, b, c) where
+  configure Proxy =
+    configure (Proxy :: Proxy a)
+      >>> configure (Proxy :: Proxy b)
+      >>> configure (Proxy :: Proxy c)
+  extractOutput result = (extractOutput result, extractOutput result, extractOutput result)
 
 newtype StdoutUntrimmed = StdoutUntrimmed
   { fromStdoutUntrimmed :: ByteString
