@@ -6,42 +6,43 @@
         pkgs = import "${nixpkgs}" {
           inherit system;
         };
-        ourHaskell = pkgs.haskell.packages.ghc945;
-        setupEnvironment = ''
+        setupEnvironment = haskellPackages: ''
           export PYTHON_BIN_PATH=${pkgs.python3}/bin/python3
-          export NIX_GHC=${ourHaskell.ghc.withPackages (p: cradle.buildInputs)}/bin/ghc
+          export NIX_GHC=${haskellPackages.ghc.withPackages (p: (mkCradle haskellPackages).buildInputs)}/bin/ghc
         '';
         src = ./.;
-        cradle =
+        mkCradle = haskellPackages:
           pkgs.haskell.lib.overrideCabal
-            (ourHaskell.callCabal2nix "cradle" src { })
+            (haskellPackages.callCabal2nix "cradle" src { })
             (old: {
-              preBuild = setupEnvironment;
-              buildDepends = (old.buildDepends or [ ]) ++ [ pkgs.just ourHaskell.doctest ];
+              preBuild = setupEnvironment haskellPackages;
+              buildDepends = (old.buildDepends or [ ]) ++ [ pkgs.just haskellPackages.doctest ];
               postCheck = ''
                 just doctest
               '';
             });
       in
-      {
-        packages.default = cradle;
+      rec {
+        lib = {
+          inherit mkCradle;
+        };
+        packages = {
+          default = lib.mkCradle pkgs.haskellPackages;
+        };
         devShells = {
           default = pkgs.mkShell {
-            shellHook = setupEnvironment;
+            shellHook = setupEnvironment pkgs.haskellPackages;
             buildInputs = with pkgs; [
               ghcid
               ormolu
               cabal-install
-              (ourHaskell.ghc.withPackages (p: cradle.buildInputs))
-              cradle.buildInputs
-              (haskell-language-server.override {
-                dynamic = true;
-                supportedGhcVersions = [ "945" ];
-              })
-              ourHaskell.cabal2nix
+              (pkgs.haskellPackages.ghc.withPackages (p: packages.default.buildInputs))
+              packages.default.buildInputs
+              (haskell-language-server.override { dynamic = true; })
+              pkgs.haskellPackages.cabal2nix
               nixpkgs-fmt
               nil
-              ourHaskell.doctest
+              pkgs.haskellPackages.doctest
               just
             ];
           };
