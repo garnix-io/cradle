@@ -2,6 +2,7 @@
 
 module CradleSpec where
 
+import Control.Concurrent (forkIO)
 import Control.Exception
 import Control.Monad.Trans.Identity
 import Cradle
@@ -10,7 +11,7 @@ import Data.Text (Text)
 import GHC.IO.Exception
 import System.Directory
 import System.Environment
-import System.IO (hClose, hGetContents, hIsClosed, stderr)
+import System.IO (hClose, hGetContents, hIsClosed, hPutStrLn, stderr)
 import System.IO.Silently
 import System.Process (createPipe)
 import Test.Hspec
@@ -89,6 +90,17 @@ spec = do
       it "allows Text as arguments" $ do
         StdoutTrimmed output <- run "echo" (cs "foo" :: Text)
         output `shouldBe` cs "foo"
+
+    describe "providing stdin" $ do
+      describe "using handles" $ do
+        it "allows to pass in handle for stdin" $ do
+          writePythonScript "exe" "print(sys.stdin.read().strip())"
+          (readEnd, writeEnd) <- createPipe
+          _ <- forkIO $ do
+            hPutStrLn writeEnd "test stdin"
+            hClose writeEnd
+          StdoutUntrimmed output <- run (StdinHandle readEnd) "./exe"
+          output `shouldBe` cs "test stdin\n"
 
     describe "capturing stdout" $ do
       it "allows to capture stdout" $ do

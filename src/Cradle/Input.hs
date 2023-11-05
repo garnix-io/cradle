@@ -1,7 +1,12 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE LambdaCase #-}
 
-module Cradle.Input (Input (..), StderrHandle (..)) where
+module Cradle.Input
+  ( Input (..),
+    StdinHandle (..),
+    StderrHandle (..),
+  )
+where
 
 import Cradle.ProcessConfiguration
 import Data.List
@@ -28,6 +33,12 @@ instance (Input a, Input b) => Input (a, b) where
 instance {-# OVERLAPS #-} (Input input) => Input [input] where
   configureProcess list config =
     foldl' (flip configureProcess) config list
+
+newtype StdinHandle = StdinHandle Handle
+
+instance Input StdinHandle where
+  configureProcess (StdinHandle handle) config =
+    config {stdinConfig = UseStdinHandle handle}
 
 newtype StderrHandle = StderrHandle Handle
 

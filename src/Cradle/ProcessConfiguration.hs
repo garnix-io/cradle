@@ -2,7 +2,8 @@
 
 module Cradle.ProcessConfiguration
   ( ProcessConfiguration (..),
-    StdStreamConfig (..),
+    StdinConfig (..),
+    OutputStreamConfig (..),
     defaultProcessConfiguration,
     addArgument,
     ProcessResult (..),
@@ -22,11 +23,16 @@ data ProcessConfiguration = ProcessConfiguration
   { executable :: Maybe String,
     arguments :: [String],
     throwOnError :: Bool,
+    stdinConfig :: StdinConfig,
     captureStdout :: Bool,
-    captureStderr :: StdStreamConfig
+    captureStderr :: OutputStreamConfig
   }
 
-data StdStreamConfig
+data StdinConfig
+  = InheritStdin
+  | UseStdinHandle Handle
+
+data OutputStreamConfig
   = CaptureStream
   | InheritStream
   | PipeStream Handle
@@ -37,6 +43,7 @@ defaultProcessConfiguration =
     { executable = Nothing,
       arguments = [],
       throwOnError = True,
+      stdinConfig = InheritStdin,
       captureStdout = False,
       captureStderr = InheritStream
     }
@@ -61,7 +68,10 @@ runProcess config = do
   (_, mStdout, mStderr, handle) <-
     createProcess_ "Cradle.run" $
       (proc executable (arguments config))
-        { std_out = if captureStdout config then CreatePipe else Inherit,
+        { std_in = case stdinConfig config of
+            InheritStdin -> Inherit
+            UseStdinHandle handle -> UseHandle handle,
+          std_out = if captureStdout config then CreatePipe else Inherit,
           std_err = case captureStderr config of
             InheritStream -> Inherit
             CaptureStream -> CreatePipe
