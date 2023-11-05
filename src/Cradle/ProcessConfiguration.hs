@@ -24,7 +24,7 @@ data ProcessConfiguration = ProcessConfiguration
     arguments :: [String],
     throwOnError :: Bool,
     stdinConfig :: StdinConfig,
-    captureStdout :: Bool,
+    captureStdout :: OutputStreamConfig,
     captureStderr :: OutputStreamConfig
   }
 
@@ -44,7 +44,7 @@ defaultProcessConfiguration =
       arguments = [],
       throwOnError = True,
       stdinConfig = InheritStdin,
-      captureStdout = False,
+      captureStdout = InheritStream,
       captureStderr = InheritStream
     }
 
@@ -71,7 +71,10 @@ runProcess config = do
         { std_in = case stdinConfig config of
             InheritStdin -> Inherit
             UseStdinHandle handle -> UseHandle handle,
-          std_out = if captureStdout config then CreatePipe else Inherit,
+          std_out = case captureStdout config of
+            InheritStream -> Inherit
+            CaptureStream -> CreatePipe
+            PipeStream handle -> UseHandle handle,
           std_err = case captureStderr config of
             InheritStream -> Inherit
             CaptureStream -> CreatePipe

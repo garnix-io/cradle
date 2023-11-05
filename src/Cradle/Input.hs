@@ -4,6 +4,7 @@
 module Cradle.Input
   ( Input (..),
     StdinHandle (..),
+    StdoutHandle (..),
     StderrHandle (..),
   )
 where
@@ -39,6 +40,12 @@ newtype StdinHandle = StdinHandle Handle
 instance Input StdinHandle where
   configureProcess (StdinHandle handle) config =
     config {stdinConfig = UseStdinHandle handle}
+
+newtype StdoutHandle = StdoutHandle Handle
+
+instance Input StdoutHandle where
+  configureProcess (StdoutHandle handle) config =
+    config {captureStdout = PipeStream handle}
 
 newtype StderrHandle = StderrHandle Handle
 

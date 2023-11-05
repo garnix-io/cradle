@@ -138,6 +138,31 @@ spec = do
           StdoutTrimmed output <- run "./exe" "foo"
           output `shouldBe` cs "foo"
 
+      describe "using handles" $ do
+        it "allows to send stdout to a handle" $ do
+          writePythonScript "exe" "print('foo')"
+          (readEnd, writeEnd) <- createPipe
+          run_ (StdoutHandle writeEnd) "./exe"
+          hClose writeEnd
+          hGetContents readEnd `shouldReturn` cs "foo\n"
+
+        it "does not relay stdout when it's captured (by default)" $ do
+          writePythonScript "exe" "print('foo')"
+          (_readEnd, writeEnd) <- createPipe
+          stdout <- capture_ $ run_ "./exe" (StdoutHandle writeEnd)
+          hClose writeEnd
+          stdout `shouldBe` ""
+
+        it "doesn't close the handle after running the process" $ do
+          writePythonScript "exe" "print(sys.argv[1])"
+          (readEnd, writeEnd) <- createPipe
+          run_ (StdoutHandle writeEnd) "./exe" "foo"
+          hIsClosed writeEnd `shouldReturn` False
+          hIsClosed readEnd `shouldReturn` False
+          run_ (StdoutHandle writeEnd) "./exe" "bar"
+          hClose writeEnd
+          hGetContents readEnd `shouldReturn` cs "foo\nbar\n"
+
     describe "capture stderr" $ do
       it "allows to capture stderr" $ do
         writePythonScript "exe" "print('output', file=sys.stderr)"
