@@ -2,7 +2,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE InstanceSigs #-}
-{-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -14,15 +13,21 @@ module Cradle
     run_,
     Runnable,
 
-    -- * Possible Output
+    -- * Possible Inputs
+    Input,
+    StdinHandle (..),
+    StdoutHandle (..),
+    StderrHandle (..),
+
+    -- * Possible Outputs
     Output,
     StdoutUntrimmed (..),
     StdoutTrimmed (..),
+    Stderr (..),
     ExitCode (..),
   )
 where
 
-import Control.Exception (ErrorCall (..), throwIO)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Cradle.Input
 import Cradle.Output
@@ -64,7 +69,7 @@ import System.Exit (ExitCode (..))
 -- `cradle` will not split any inputs by whitespace. So e.g. this doesn't work:
 --
 -- >>> run_ "echo foo"
--- *** Exception: echo foo: createProcess: posix_spawnp: does not exist (No such file or directory)
+-- *** Exception: echo foo: Cradle.run: posix_spawnp: does not exist (No such file or directory)
 --
 -- This is trying to run an executable with the file name @"echo foo"@, which doesn't exist.
 -- You can split words in haskell though:
@@ -72,24 +77,22 @@ import System.Exit (ExitCode (..))
 -- >>> run_ $ words "echo foo"
 -- foo
 run :: (Runnable runnable) => runnable
-run = runProcessConfig Nothing
+run = runProcessConfig defaultProcessConfiguration
 
 class Runnable runnable where
-  runProcessConfig :: Maybe ProcessConfiguration -> runnable
+  runProcessConfig :: ProcessConfiguration -> runnable
 
 instance
   (Input input, Runnable runnable) =>
   Runnable (input -> runnable)
   where
-  runProcessConfig :: Maybe ProcessConfiguration -> input -> runnable
+  runProcessConfig :: ProcessConfiguration -> input -> runnable
   runProcessConfig createProcess input =
     runProcessConfig (configureProcess input createProcess)
 
 instance {-# OVERLAPS #-} forall m a. (MonadIO m, Output a) => Runnable (m a) where
-  runProcessConfig :: Maybe ProcessConfiguration -> m a
-  runProcessConfig = \case
-    Nothing -> liftIO $ throwIO $ ErrorCall "should be impossible, see DefinesExecutable"
-    Just config -> liftIO $ runAndGetOutput config
+  runProcessConfig :: ProcessConfiguration -> m a
+  runProcessConfig config = liftIO $ runAndGetOutput config
 
 -- | Same as `run`, but always returns '()'.
 --
