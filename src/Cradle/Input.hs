@@ -45,10 +45,10 @@ newtype StdoutHandle = StdoutHandle Handle
 
 instance Input StdoutHandle where
   configureProcess (StdoutHandle handle) config =
-    config {captureStdout = PipeStream handle}
+    config {stdoutConfig = PipeStream handle}
 
 newtype StderrHandle = StderrHandle Handle
 
 instance Input StderrHandle where
   configureProcess (StderrHandle handle) config =
-    config {captureStderr = PipeStream handle}
+    config {stderrConfig = PipeStream handle}

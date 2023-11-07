@@ -47,7 +47,7 @@ newtype StdoutUntrimmed = StdoutUntrimmed
   }
 
 instance Output StdoutUntrimmed where
-  configure Proxy config = config {captureStdout = CaptureStream}
+  configure Proxy config = config {stdoutConfig = CaptureStream}
   extractOutput result =
     case stdout result of
       Nothing -> error "impossible: stdout not captured"
@@ -58,7 +58,7 @@ newtype StdoutTrimmed = StdoutTrimmed
   }
 
 instance Output StdoutTrimmed where
-  configure Proxy config = config {captureStdout = CaptureStream}
+  configure Proxy config = config {stdoutConfig = CaptureStream}
   extractOutput result =
     let StdoutUntrimmed output = extractOutput result
      in StdoutTrimmed $ trim $ output
@@ -70,7 +70,7 @@ newtype Stderr = Stderr
   }
 
 instance Output Stderr where
-  configure Proxy config = config {captureStderr = CaptureStream}
+  configure Proxy config = config {stderrConfig = CaptureStream}
   extractOutput result =
     case stderr result of
       Nothing -> error "impossible: stderr not captured"
