@@ -19,6 +19,7 @@ module Cradle
     NoStdin (..),
     StdoutHandle (..),
     StderrHandle (..),
+    DelegateCtrlC (..),
 
     -- * Possible Outputs
     Output,

@@ -7,6 +7,7 @@ module Cradle.Input
     NoStdin (..),
     StdoutHandle (..),
     StderrHandle (..),
+    DelegateCtrlC (..),
   )
 where
 
@@ -107,3 +108,9 @@ newtype StderrHandle = StderrHandle Handle
 instance Input StderrHandle where
   configureProcess (StderrHandle handle) config =
     config {stderrConfig = PipeStream handle}
+
+data DelegateCtrlC = DelegateCtrlC
+
+instance Input DelegateCtrlC where
+  configureProcess DelegateCtrlC config =
+    config {delegateCtlc = True}

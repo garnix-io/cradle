@@ -25,7 +25,8 @@ data ProcessConfiguration = ProcessConfiguration
     throwOnError :: Bool,
     stdinConfig :: StdinConfig,
     stdoutConfig :: OutputStreamConfig,
-    stderrConfig :: OutputStreamConfig
+    stderrConfig :: OutputStreamConfig,
+    delegateCtlc :: Bool
   }
 
 data StdinConfig
@@ -46,7 +47,8 @@ defaultProcessConfiguration =
       throwOnError = True,
       stdinConfig = InheritStdin,
       stdoutConfig = InheritStream,
-      stderrConfig = InheritStream
+      stderrConfig = InheritStream,
+      delegateCtlc = False
     }
 
 addArgument :: String -> ProcessConfiguration -> ProcessConfiguration
@@ -80,7 +82,8 @@ runProcess config = do
           std_err = case stderrConfig config of
             InheritStream -> Inherit
             CaptureStream -> CreatePipe
-            PipeStream handle -> UseHandle handle
+            PipeStream handle -> UseHandle handle,
+          delegate_ctlc = delegateCtlc config
         }
   mStdoutMVar <- forM mStdout $ \stdout -> do
     mvar <- newEmptyMVar
