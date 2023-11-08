@@ -10,6 +10,7 @@ module Cradle.Input
   )
 where
 
+import Control.Arrow ((>>>))
 import Cradle.ProcessConfiguration
 import Data.List
 import Data.Text (Text, unpack)
@@ -29,8 +30,55 @@ instance Input Text where
 instance Input () where
   configureProcess () = id
 
-instance (Input a, Input b) => Input (a, b) where
-  configureProcess (a, b) = configureProcess b . configureProcess a
+instance
+  (Input a, Input b) =>
+  Input (a, b)
+  where
+  configureProcess (a, b) =
+    configureProcess a
+      >>> configureProcess b
+
+instance
+  (Input a, Input b, Input c) =>
+  Input (a, b, c)
+  where
+  configureProcess (a, b, c) =
+    configureProcess a
+      >>> configureProcess b
+      >>> configureProcess c
+
+instance
+  (Input a, Input b, Input c, Input d) =>
+  Input (a, b, c, d)
+  where
+  configureProcess (a, b, c, d) =
+    configureProcess a
+      >>> configureProcess b
+      >>> configureProcess c
+      >>> configureProcess d
+
+instance
+  (Input a, Input b, Input c, Input d, Input e) =>
+  Input (a, b, c, d, e)
+  where
+  configureProcess (a, b, c, d, e) =
+    configureProcess a
+      >>> configureProcess b
+      >>> configureProcess c
+      >>> configureProcess d
+      >>> configureProcess e
+
+instance
+  (Input a, Input b, Input c, Input d, Input e, Input f) =>
+  Input (a, b, c, d, e, f)
+  where
+  configureProcess (a, b, c, d, e, f) =
+    configureProcess a
+      >>> configureProcess b
+      >>> configureProcess c
+      >>> configureProcess d
+      >>> configureProcess e
+      >>> configureProcess f
 
 instance {-# OVERLAPS #-} (Input input) => Input [input] where
   configureProcess list config =
