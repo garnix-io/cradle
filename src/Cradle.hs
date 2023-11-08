@@ -16,6 +16,7 @@ module Cradle
     -- * Possible Inputs
     Input,
     StdinHandle (..),
+    NoStdin (..),
     StdoutHandle (..),
     StderrHandle (..),
 

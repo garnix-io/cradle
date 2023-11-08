@@ -31,6 +31,7 @@ data ProcessConfiguration = ProcessConfiguration
 data StdinConfig
   = InheritStdin
   | UseStdinHandle Handle
+  | NoStdinStream
 
 data OutputStreamConfig
   = CaptureStream
@@ -70,7 +71,8 @@ runProcess config = do
       (proc executable (arguments config))
         { std_in = case stdinConfig config of
             InheritStdin -> Inherit
-            UseStdinHandle handle -> UseHandle handle,
+            UseStdinHandle handle -> UseHandle handle
+            NoStdinStream -> NoStream,
           std_out = case stdoutConfig config of
             InheritStream -> Inherit
             CaptureStream -> CreatePipe

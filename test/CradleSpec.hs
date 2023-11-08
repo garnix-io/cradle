@@ -102,6 +102,11 @@ spec = do
           StdoutUntrimmed output <- run (StdinHandle readEnd) "./exe"
           output `shouldBe` cs "test stdin\n"
 
+      it "allows to disable inheriting stdin" $ do
+        writePythonScript "exe" "print(sys.stdin)"
+        StdoutTrimmed output <- run NoStdin "./exe"
+        output `shouldBe` cs "None"
+
     describe "capturing stdout" $ do
       it "allows to capture stdout" $ do
         writePythonScript "exe" "print('output')"
