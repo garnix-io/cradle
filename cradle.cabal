@@ -18,7 +18,7 @@ library
       Paths_cradle
   hs-source-dirs:
       src
-  ghc-options: -Wall -Wno-name-shadowing
+  ghc-options: -Wall -Wno-name-shadowing -threaded
   build-depends:
       base
     , bytestring
@@ -40,7 +40,7 @@ test-suite spec
   hs-source-dirs:
       test
       src
-  ghc-options: -Wall -Wno-name-shadowing -fdefer-typed-holes
+  ghc-options: -Wall -Wno-name-shadowing -threaded -fdefer-typed-holes
   build-depends:
       base
     , bytestring

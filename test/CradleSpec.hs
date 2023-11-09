@@ -6,6 +6,7 @@ import Control.Concurrent (forkIO)
 import Control.Exception
 import Control.Monad.Trans.Identity
 import Cradle
+import Data.ByteString (length)
 import Data.String.Conversions
 import Data.Text (Text)
 import GHC.IO.Exception
@@ -16,7 +17,7 @@ import System.IO.Silently
 import System.Process (createPipe)
 import Test.Hspec
 import Test.Mockery.Directory
-import Prelude hiding (getContents)
+import Prelude hiding (getContents, length)
 
 spec :: Spec
 spec = do
@@ -142,6 +143,12 @@ spec = do
           writePythonScript "exe" "print('  foo   ')"
           StdoutTrimmed output <- run "./exe" "foo"
           output `shouldBe` cs "foo"
+
+      it "handles bigger outputs correctly" $ do
+        print "big output"
+        writePythonScript "exe" "print('x' * 2 ** 22)"
+        StdoutTrimmed output <- run "./exe"
+        length output `shouldBe` 2 ^ (22 :: Int)
 
       describe "using handles" $ do
         it "allows to send stdout to a handle" $ do

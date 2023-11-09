@@ -17,7 +17,14 @@ import Control.Monad
 import Data.ByteString (ByteString, hGetContents)
 import System.Exit
 import System.IO (Handle)
-import System.Process (CreateProcess (..), StdStream (..), createProcess_, proc, waitForProcess)
+import System.Posix.Internals (hostIsThreaded)
+import System.Process
+  ( CreateProcess (..),
+    StdStream (..),
+    createProcess_,
+    proc,
+    waitForProcess,
+  )
 
 data ProcessConfiguration = ProcessConfiguration
   { executable :: Maybe String,
@@ -65,6 +72,7 @@ data ProcessResult = ProcessResult
 
 runProcess :: ProcessConfiguration -> IO ProcessResult
 runProcess config = do
+  assertThreadedRuntime
   executable <- case executable config of
     Just executable -> return executable
     Nothing -> throwIO $ ErrorCall "Cradle: no executable given"
@@ -107,6 +115,11 @@ runProcess config = do
         stderr,
         exitCode
       }
+
+assertThreadedRuntime :: IO ()
+assertThreadedRuntime =
+  when (not hostIsThreaded) $ do
+    throwIO $ ErrorCall "Cradle needs the ghc's threaded runtime system to work correctly. Use the ghc option '-threaded'."
 
 throwWhenNonZero :: String -> ProcessConfiguration -> ExitCode -> IO ()
 throwWhenNonZero executable config exitCode = do
