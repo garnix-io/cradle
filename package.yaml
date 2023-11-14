@@ -21,6 +21,7 @@ tests:
       - -fdefer-typed-holes
     dependencies:
       - directory
+      - filepath
       - hspec
       - hspec-discover
       - mockery

@@ -20,6 +20,7 @@ module Cradle
     StdoutHandle (..),
     StderrHandle (..),
     DelegateCtrlC (..),
+    WorkingDir (..),
 
     -- * Possible Outputs
     Output,
