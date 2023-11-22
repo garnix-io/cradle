@@ -29,6 +29,7 @@ import System.Process
 data ProcessConfiguration = ProcessConfiguration
   { executable :: Maybe String,
     arguments :: [String],
+    workingDir :: Maybe FilePath,
     throwOnError :: Bool,
     stdinConfig :: StdinConfig,
     stdoutConfig :: OutputStreamConfig,
@@ -51,6 +52,7 @@ defaultProcessConfiguration =
   ProcessConfiguration
     { executable = Nothing,
       arguments = [],
+      workingDir = Nothing,
       throwOnError = True,
       stdinConfig = InheritStdin,
       stdoutConfig = InheritStream,
@@ -79,7 +81,8 @@ runProcess config = do
   (_, mStdout, mStderr, handle) <-
     createProcess_ "Cradle.run" $
       (proc executable (arguments config))
-        { std_in = case stdinConfig config of
+        { cwd = workingDir config,
+          std_in = case stdinConfig config of
             InheritStdin -> Inherit
             UseStdinHandle handle -> UseHandle handle
             NoStdinStream -> NoStream,

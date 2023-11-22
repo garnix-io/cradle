@@ -12,6 +12,7 @@ import Data.Text (Text)
 import GHC.IO.Exception
 import System.Directory
 import System.Environment
+import System.FilePath ((</>))
 import System.IO (hClose, hGetContents, hIsClosed, hPutStrLn, stderr)
 import System.IO.Silently
 import System.Process (createPipe)
@@ -244,10 +245,33 @@ spec = do
         stdout `shouldBe` cs "foo"
         exitCode `shouldBe` ExitFailure 42
 
+    describe "working directory" $ do
+      it "inherits the current working directory" $ do
+        writePythonScript "exe" "print(os.getcwd())"
+        StdoutTrimmed stdout <- run "./exe"
+        cwd <- getCurrentDirectory
+        stdout `shouldBe` cs cwd
+
+      it "allows to set the working directory" $ do
+        writePythonScript "exe" "print(os.getcwd())"
+        createDirectory "dir"
+        cwd <- getCurrentDirectory
+        StdoutTrimmed stdout <- run (WorkingDir "dir") (cwd </> "./exe")
+        stdout `shouldBe` cs (cwd </> "dir")
+
+      it "does not modify the parent's working directory" $ do
+        writePythonScript "exe" "print('foo')"
+        createDirectory "dir"
+        before <- getCurrentDirectory
+        StdoutTrimmed output <- run (WorkingDir "dir") (before </> "./exe")
+        after <- getCurrentDirectory
+        output `shouldBe` cs "foo"
+        after `shouldBe` before
+
 writePythonScript :: FilePath -> String -> IO ()
 writePythonScript file code = do
   pythonPath <- getEnv "PYTHON_BIN_PATH"
-  writeFile file ("#!" <> pythonPath <> "\nimport sys\n" <> code)
+  writeFile file ("#!" <> pythonPath <> "\nimport os\nimport sys\n" <> code)
   makeExecutable file
 
 makeExecutable :: FilePath -> IO ()

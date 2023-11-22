@@ -8,6 +8,7 @@ module Cradle.Input
     StdoutHandle (..),
     StderrHandle (..),
     DelegateCtrlC (..),
+    WorkingDir (..),
   )
 where
 
@@ -114,3 +115,9 @@ data DelegateCtrlC = DelegateCtrlC
 instance Input DelegateCtrlC where
   configureProcess DelegateCtrlC config =
     config {delegateCtlc = True}
+
+data WorkingDir = WorkingDir FilePath
+
+instance Input WorkingDir where
+  configureProcess (WorkingDir dir) config =
+    config {workingDir = Just dir}

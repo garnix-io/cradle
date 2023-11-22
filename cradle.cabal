@@ -45,6 +45,7 @@ test-suite spec
       base
     , bytestring
     , directory
+    , filepath
     , hspec
     , hspec-discover
     , mockery
