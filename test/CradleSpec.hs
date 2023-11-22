@@ -146,7 +146,6 @@ spec = do
           output `shouldBe` cs "foo"
 
       it "handles bigger outputs correctly" $ do
-        print "big output"
         writePythonScript "exe" "print('x' * 2 ** 22)"
         StdoutTrimmed output <- run "./exe"
         length output `shouldBe` 2 ^ (22 :: Int)
