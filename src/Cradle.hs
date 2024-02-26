@@ -14,7 +14,8 @@ module Cradle
     Runnable,
 
     -- * Possible Inputs
-    Input,
+    Input (..),
+    ProcessConfiguration (..),
     StdinHandle (..),
     NoStdin (..),
     StdoutHandle (..),
@@ -23,7 +24,7 @@ module Cradle
     WorkingDir (..),
 
     -- * Possible Outputs
-    Output,
+    Output (..),
     StdoutUntrimmed (..),
     StdoutTrimmed (..),
     Stderr (..),
