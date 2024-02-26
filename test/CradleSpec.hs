@@ -267,6 +267,19 @@ spec = do
         output `shouldBe` cs "foo"
         after `shouldBe` before
 
+    describe "environment" $ do
+      it "inherits the parent by default" $ do
+        StdoutTrimmed output <- run "printenv"
+        length output `shouldNotBe` 0
+
+      it "can be set to empty" $ do
+        StdoutTrimmed output <- run "printenv" (SetEnv [])
+        length output `shouldBe` 0
+
+      it "can be added to when previously emptied" $ do
+        StdoutTrimmed output <- run "printenv" (SetEnv []) (AddToEnv [("a", "b")])
+        output `shouldBe` cs "a=b"
+
 writePythonScript :: FilePath -> String -> IO ()
 writePythonScript file code = do
   pythonPath <- getEnv "PYTHON_BIN_PATH"

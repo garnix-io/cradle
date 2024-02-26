@@ -20,6 +20,8 @@ module Cradle
     NoStdin (..),
     StdoutHandle (..),
     StderrHandle (..),
+    AddToEnv (..),
+    SetEnv (..),
     DelegateCtrlC (..),
     WorkingDir (..),
 

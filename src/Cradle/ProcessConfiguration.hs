@@ -4,6 +4,7 @@ module Cradle.ProcessConfiguration
   ( ProcessConfiguration (..),
     StdinConfig (..),
     OutputStreamConfig (..),
+    EnvironmentConfig (..),
     defaultProcessConfiguration,
     addArgument,
     ProcessResult (..),
@@ -15,6 +16,7 @@ import Control.Concurrent
 import Control.Exception
 import Control.Monad
 import Data.ByteString (ByteString, hGetContents)
+import System.Environment (getEnvironment)
 import System.Exit
 import System.IO (Handle)
 import System.Posix.Internals (hostIsThreaded)
@@ -34,6 +36,7 @@ data ProcessConfiguration = ProcessConfiguration
     stdinConfig :: StdinConfig,
     stdoutConfig :: OutputStreamConfig,
     stderrConfig :: OutputStreamConfig,
+    environment :: EnvironmentConfig,
     delegateCtlc :: Bool
   }
 
@@ -47,6 +50,10 @@ data OutputStreamConfig
   | InheritStream
   | PipeStream Handle
 
+data EnvironmentConfig
+  = AddToInheritedEnvironment [(String, String)]
+  | SetEnvironment [(String, String)]
+
 defaultProcessConfiguration :: ProcessConfiguration
 defaultProcessConfiguration =
   ProcessConfiguration
@@ -57,6 +64,7 @@ defaultProcessConfiguration =
       stdinConfig = InheritStdin,
       stdoutConfig = InheritStream,
       stderrConfig = InheritStream,
+      environment = AddToInheritedEnvironment [],
       delegateCtlc = False
     }
 
@@ -78,6 +86,9 @@ runProcess config = do
   executable <- case executable config of
     Just executable -> return executable
     Nothing -> throwIO $ ErrorCall "Cradle: no executable given"
+  env' <- case environment config of
+    AddToInheritedEnvironment additions -> (additions <>) <$> getEnvironment
+    SetEnvironment e -> pure e
   (_, mStdout, mStderr, handle) <-
     createProcess_ "Cradle.run" $
       (proc executable (arguments config))
@@ -94,7 +105,8 @@ runProcess config = do
             InheritStream -> Inherit
             CaptureStream -> CreatePipe
             PipeStream handle -> UseHandle handle,
-          delegate_ctlc = delegateCtlc config
+          delegate_ctlc = delegateCtlc config,
+          env = Just env'
         }
   mStdoutMVar <- forM mStdout $ \stdout -> do
     mvar <- newEmptyMVar

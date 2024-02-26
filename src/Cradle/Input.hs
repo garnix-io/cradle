@@ -7,6 +7,8 @@ module Cradle.Input
     NoStdin (..),
     StdoutHandle (..),
     StderrHandle (..),
+    SetEnv (..),
+    AddToEnv (..),
     DelegateCtrlC (..),
     WorkingDir (..),
   )
@@ -121,3 +123,18 @@ data WorkingDir = WorkingDir FilePath
 instance Input WorkingDir where
   configureProcess (WorkingDir dir) config =
     config {workingDir = Just dir}
+
+data SetEnv = SetEnv [(String, String)]
+
+instance Input SetEnv where
+  configureProcess (SetEnv env) config =
+    config {environment = SetEnvironment env}
+
+data AddToEnv = AddToEnv [(String, String)]
+
+instance Input AddToEnv where
+  configureProcess (AddToEnv env) config = config {environment = newEnv}
+    where
+      newEnv = case environment config of
+        AddToInheritedEnvironment e -> AddToInheritedEnvironment (env <> e)
+        SetEnvironment e -> SetEnvironment (env <> e)
