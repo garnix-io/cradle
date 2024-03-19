@@ -11,10 +11,10 @@ build-type:     Simple
 library
   exposed-modules:
       Cradle
-  other-modules:
-      Cradle.Input
       Cradle.Output
       Cradle.ProcessConfiguration
+      Cradle.ProcessConfiguration.Helpers
+  other-modules:
       Paths_cradle
   hs-source-dirs:
       src
@@ -23,6 +23,7 @@ library
       base
     , bytestring
     , process
+    , string-conversions
     , text
   default-language: Haskell2010
 
@@ -33,9 +34,9 @@ test-suite spec
       CradleSpec
       OverloadedStringsSpec
       Cradle
-      Cradle.Input
       Cradle.Output
       Cradle.ProcessConfiguration
+      Cradle.ProcessConfiguration.Helpers
       Paths_cradle
   hs-source-dirs:
       test
