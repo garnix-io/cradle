@@ -5,6 +5,7 @@ dependencies:
   - base
   - bytestring
   - process
+  - string-conversions
   - text
 
 ghc-options:
@@ -27,11 +28,8 @@ tests:
       - hspec-discover
       - mockery
       - silently
-      - string-conversions
       - transformers
 
 library:
   source-dirs:
     - src
-  exposed-modules:
-    - Cradle

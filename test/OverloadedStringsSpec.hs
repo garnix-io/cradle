@@ -12,5 +12,8 @@ spec :: Spec
 spec = do
   around_ inTempDirectory $ do
     it "works with overloaded strings" $ do
-      StdoutUntrimmed _ <- run "ls" ("-la", ())
+      StdoutUntrimmed _ <-
+        run $
+          cmd "ls"
+            & addArgs ["-la"]
       return () :: IO ()

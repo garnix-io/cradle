@@ -4,8 +4,7 @@ module Cradle.ProcessConfiguration
   ( ProcessConfiguration (..),
     StdinConfig (..),
     OutputStreamConfig (..),
-    defaultProcessConfiguration,
-    addArgument,
+    cmd,
     ProcessResult (..),
     runProcess,
   )
@@ -47,10 +46,10 @@ data OutputStreamConfig
   | InheritStream
   | PipeStream Handle
 
-defaultProcessConfiguration :: ProcessConfiguration
-defaultProcessConfiguration =
+cmd :: String -> ProcessConfiguration
+cmd executable =
   ProcessConfiguration
-    { executable = Nothing,
+    { executable = Just executable,
       arguments = [],
       workingDir = Nothing,
       throwOnError = True,
@@ -58,12 +57,6 @@ defaultProcessConfiguration =
       stdoutConfig = InheritStream,
       stderrConfig = InheritStream,
       delegateCtlc = False
-    }
-
-addArgument :: String -> ProcessConfiguration -> ProcessConfiguration
-addArgument arg config =
-  config
-    { arguments = arguments config ++ [arg]
     }
 
 data ProcessResult = ProcessResult
