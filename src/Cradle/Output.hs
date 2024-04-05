@@ -1,3 +1,5 @@
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 module Cradle.Output
@@ -14,6 +16,7 @@ import Cradle.ProcessConfiguration
 import Data.ByteString.Char8
 import Data.Char
 import Data.Proxy
+import GHC.Generics (Generic)
 import System.Exit
 import Prelude hiding (dropWhile)
 
@@ -111,6 +114,7 @@ instance
 newtype StdoutUntrimmed = StdoutUntrimmed
   { fromStdoutUntrimmed :: ByteString
   }
+  deriving stock (Show, Eq, Ord, Generic)
 
 instance Output StdoutUntrimmed where
   configure Proxy config = config {stdoutConfig = CaptureStream}
@@ -122,6 +126,7 @@ instance Output StdoutUntrimmed where
 newtype StdoutTrimmed = StdoutTrimmed
   { fromStdoutTrimmed :: ByteString
   }
+  deriving stock (Show, Eq, Ord, Generic)
 
 instance Output StdoutTrimmed where
   configure Proxy config = config {stdoutConfig = CaptureStream}
@@ -134,6 +139,7 @@ instance Output StdoutTrimmed where
 newtype Stderr = Stderr
   { fromStderr :: ByteString
   }
+  deriving stock (Show, Eq, Ord, Generic)
 
 instance Output Stderr where
   configure Proxy config = config {stderrConfig = CaptureStream}
