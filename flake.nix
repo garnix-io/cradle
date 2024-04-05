@@ -29,6 +29,14 @@
         packages = {
           default = lib.mkCradle pkgs.haskellPackages;
         };
+        checks = {
+          hlint = pkgs.runCommand "hlint" { buildInputs = [ pkgs.hlint ]; }
+            ''
+              cd ${./.}
+              hlint src test
+              touch $out
+            '';
+        };
         devShells = {
           default = pkgs.mkShell {
             shellHook = setupEnvironment pkgs.haskellPackages;
@@ -44,6 +52,7 @@
               nil
               pkgs.haskellPackages.doctest
               just
+              hlint
             ];
           };
         };

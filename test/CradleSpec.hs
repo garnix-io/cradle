@@ -40,9 +40,8 @@ spec = do
         writeFile "exe" "whatever"
         run_ (cmd "./exe")
           `shouldThrow` ( \(e :: IOException) ->
-                            ( ioe_filename e == Just "./exe"
-                                && ioe_type e == PermissionDenied
-                            )
+                            ioe_filename e == Just "./exe"
+                              && ioe_type e == PermissionDenied
                         )
 
       it "throws when the hashbang interpreter cannot be found" $ do
@@ -62,7 +61,8 @@ spec = do
 
     describe "arguments" $ do
       let writeArgumentWriter = do
-            writePythonScript "exe" $
+            writePythonScript
+              "exe"
               "open('file', 'w').write(' '.join(sys.argv[1:]))"
 
       it "allows to pass in an argument" $ do
