@@ -13,7 +13,7 @@ import GHC.IO.Exception
 import System.Directory
 import System.Environment
 import System.FilePath ((</>))
-import System.IO (hClose, hGetContents, hIsClosed, hPutStrLn, stderr)
+import System.IO (hClose, hGetContents, hIsClosed, hPutStrLn, stderr, stdout)
 import System.IO.Silently
 import System.Process (createPipe)
 import Test.Hspec
@@ -133,6 +133,11 @@ spec = do
         output <- capture_ $ run_ $ cmd "./exe"
         output `shouldBe` "foo\n"
 
+      it "allows silencing stdout when it's not captured" $ do
+        writePythonScript "exe" "print('foo')"
+        output <- hCapture_ [stdout] $ run_ $ cmd "./exe" & silenceStdout
+        output `shouldBe` ""
+
       it "does not relay stdout when it's captured (by default)" $ do
         writePythonScript "exe" "print('foo')"
         output <- capture_ $ do
@@ -197,6 +202,11 @@ spec = do
         writePythonScript "exe" "print('foo', file=sys.stderr)"
         output <- hCapture_ [stderr] $ run_ $ cmd "./exe"
         output `shouldBe` "foo\n"
+
+      it "allows silencing stderr when it's not captured" $ do
+        writePythonScript "exe" "print('foo', file=sys.stderr)"
+        output <- hCapture_ [stderr] $ run_ $ cmd "./exe" & silenceStderr
+        output `shouldBe` ""
 
       it "does not relay stderr when it's captured (by default)" $ do
         writePythonScript "exe" "print('foo', file=sys.stderr)"

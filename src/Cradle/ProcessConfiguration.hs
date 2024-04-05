@@ -1,3 +1,4 @@
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE NamedFieldPuns #-}
 
 module Cradle.ProcessConfiguration
@@ -44,7 +45,9 @@ data StdinConfig
 data OutputStreamConfig
   = CaptureStream
   | InheritStream
+  | IgnoreStream
   | PipeStream Handle
+  deriving stock (Show)
 
 cmd :: String -> ProcessConfiguration
 cmd executable =
@@ -71,6 +74,8 @@ runProcess config = do
   executable <- case executable config of
     Just executable -> return executable
     Nothing -> throwIO $ ErrorCall "Cradle: no executable given"
+  let stdoutHandler = outputStreamHandler $ stdoutConfig config
+      stderrHandler = outputStreamHandler $ stderrConfig config
   (_, mStdout, mStderr, handle) <-
     createProcess_ "Cradle.run" $
       (proc executable (arguments config))
@@ -79,38 +84,47 @@ runProcess config = do
             InheritStdin -> Inherit
             UseStdinHandle handle -> UseHandle handle
             NoStdinStream -> NoStream,
-          std_out = case stdoutConfig config of
-            InheritStream -> Inherit
-            CaptureStream -> CreatePipe
-            PipeStream handle -> UseHandle handle,
-          std_err = case stderrConfig config of
-            InheritStream -> Inherit
-            CaptureStream -> CreatePipe
-            PipeStream handle -> UseHandle handle,
+          std_out = stdStream stdoutHandler,
+          std_err = stdStream stderrHandler,
           delegate_ctlc = delegateCtlc config
         }
-  mStdoutMVar <- forM mStdout $ \stdout -> do
-    mvar <- newEmptyMVar
-    _ <-
-      forkIO $
-        hGetContents stdout >>= putMVar mvar
-    return mvar
-  mStderrMVar <- forM mStderr $ \stderr -> do
-    mvar <- newEmptyMVar
-    _ <-
-      forkIO $
-        hGetContents stderr >>= putMVar mvar
-    return mvar
+  waitForStdoutCapture <- startCapturing stdoutHandler mStdout
+  waitForStderrCapture <- startCapturing stderrHandler mStderr
   exitCode <- waitForProcess handle
   throwWhenNonZero executable config exitCode
-  stdout <- forM mStdoutMVar readMVar
-  stderr <- forM mStderrMVar readMVar
+  stdout <- waitForStdoutCapture
+  stderr <- waitForStderrCapture
   return $
     ProcessResult
       { stdout,
         stderr,
         exitCode
       }
+
+data OutputStreamHandler = OutputStreamHandler
+  { stdStream :: StdStream,
+    startCapturing :: Maybe Handle -> IO (IO (Maybe ByteString))
+  }
+
+outputStreamHandler :: OutputStreamConfig -> OutputStreamHandler
+outputStreamHandler config =
+  OutputStreamHandler
+    { stdStream = case config of
+        InheritStream -> Inherit
+        CaptureStream -> CreatePipe
+        IgnoreStream -> CreatePipe
+        PipeStream handle -> UseHandle handle,
+      startCapturing = \mHandle -> case (config, mHandle) of
+        (InheritStream, Nothing) -> return $ return Nothing
+        (CaptureStream, Just handle) -> do
+          mvar <- newEmptyMVar
+          _ <- forkIO $ hGetContents handle >>= putMVar mvar . Just
+          return $ readMVar mvar
+        (IgnoreStream, Just _handle) -> return $ return Nothing
+        (PipeStream _handle, Nothing) -> return $ return Nothing
+        (_, Just _) -> throwIO $ ErrorCall "outputStreamHandler: pipe created unexpectedly"
+        (_, Nothing) -> throwIO $ ErrorCall "outputStreamHandler: pipe not created unexpectedly"
+    }
 
 assertThreadedRuntime :: IO ()
 assertThreadedRuntime =
