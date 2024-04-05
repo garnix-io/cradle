@@ -132,7 +132,7 @@ instance Output StdoutTrimmed where
   configure Proxy config = config {stdoutConfig = CaptureStream}
   extractOutput result =
     let StdoutUntrimmed output = extractOutput result
-     in StdoutTrimmed $ trim $ output
+     in StdoutTrimmed $ trim output
     where
       trim = dropWhile isSpace . dropWhileEnd isSpace
 
