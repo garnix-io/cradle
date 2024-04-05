@@ -22,9 +22,17 @@ setStdoutHandle :: Handle -> ProcessConfiguration -> ProcessConfiguration
 setStdoutHandle handle config =
   config {stdoutConfig = PipeStream handle}
 
+silenceStdout :: ProcessConfiguration -> ProcessConfiguration
+silenceStdout config =
+  config {stdoutConfig = IgnoreStream}
+
 setStderrHandle :: Handle -> ProcessConfiguration -> ProcessConfiguration
 setStderrHandle handle config =
   config {stderrConfig = PipeStream handle}
+
+silenceStderr :: ProcessConfiguration -> ProcessConfiguration
+silenceStderr config =
+  config {stderrConfig = IgnoreStream}
 
 setDelegateCtrlC :: ProcessConfiguration -> ProcessConfiguration
 setDelegateCtrlC config =

@@ -44,6 +44,7 @@ data StdinConfig
 data OutputStreamConfig
   = CaptureStream
   | InheritStream
+  | IgnoreStream
   | PipeStream Handle
 
 cmd :: String -> ProcessConfiguration
@@ -82,25 +83,31 @@ runProcess config = do
           std_out = case stdoutConfig config of
             InheritStream -> Inherit
             CaptureStream -> CreatePipe
+            IgnoreStream -> CreatePipe
             PipeStream handle -> UseHandle handle,
           std_err = case stderrConfig config of
             InheritStream -> Inherit
             CaptureStream -> CreatePipe
+            IgnoreStream -> CreatePipe
             PipeStream handle -> UseHandle handle,
           delegate_ctlc = delegateCtlc config
         }
-  mStdoutMVar <- forM mStdout $ \stdout -> do
-    mvar <- newEmptyMVar
-    _ <-
-      forkIO $
-        hGetContents stdout >>= putMVar mvar
-    return mvar
-  mStderrMVar <- forM mStderr $ \stderr -> do
-    mvar <- newEmptyMVar
-    _ <-
-      forkIO $
-        hGetContents stderr >>= putMVar mvar
-    return mvar
+  mStdoutMVar <- case stdoutConfig config of
+    IgnoreStream -> return Nothing
+    _ -> forM mStdout $ \stdout -> do
+      mvar <- newEmptyMVar
+      _ <-
+        forkIO $
+          hGetContents stdout >>= putMVar mvar
+      return mvar
+  mStderrMVar <- case stderrConfig config of
+    IgnoreStream -> return Nothing
+    _ -> forM mStderr $ \stderr -> do
+      mvar <- newEmptyMVar
+      _ <-
+        forkIO $
+          hGetContents stderr >>= putMVar mvar
+      return mvar
   exitCode <- waitForProcess handle
   throwWhenNonZero executable config exitCode
   stdout <- forM mStdoutMVar readMVar
