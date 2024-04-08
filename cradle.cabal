@@ -49,6 +49,7 @@ test-suite spec
     , filepath
     , hspec
     , hspec-discover
+    , interpolate
     , mockery
     , process
     , silently

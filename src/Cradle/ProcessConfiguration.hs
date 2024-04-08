@@ -20,7 +20,9 @@ import System.IO (Handle)
 import System.Posix.Internals (hostIsThreaded)
 import System.Process
   ( CreateProcess (..),
+    ProcessHandle,
     StdStream (..),
+    cleanupProcess,
     createProcess_,
     proc,
     waitForProcess,
@@ -76,9 +78,9 @@ runProcess config = do
     Nothing -> throwIO $ ErrorCall "Cradle: no executable given"
   let stdoutHandler = outputStreamHandler $ stdoutConfig config
       stderrHandler = outputStreamHandler $ stderrConfig config
-  (_, mStdout, mStderr, handle) <-
-    createProcess_ "Cradle.run" $
-      (proc executable (arguments config))
+  withCreateProcess
+    "Cradle.run"
+    ( (proc executable (arguments config))
         { cwd = workingDir config,
           std_in = case stdinConfig config of
             InheritStdin -> Inherit
@@ -88,18 +90,27 @@ runProcess config = do
           std_err = stdStream stderrHandler,
           delegate_ctlc = delegateCtlc config
         }
-  waitForStdoutCapture <- startCapturing stdoutHandler mStdout
-  waitForStderrCapture <- startCapturing stderrHandler mStderr
-  exitCode <- waitForProcess handle
-  throwWhenNonZero executable config exitCode
-  stdout <- waitForStdoutCapture
-  stderr <- waitForStderrCapture
-  return $
-    ProcessResult
-      { stdout,
-        stderr,
-        exitCode
-      }
+    )
+    $ \_ mStdout mStderr handle -> do
+      waitForStdoutCapture <- startCapturing stdoutHandler mStdout
+      waitForStderrCapture <- startCapturing stderrHandler mStderr
+      exitCode <- waitForProcess handle
+      throwWhenNonZero executable config exitCode
+      stdout <- waitForStdoutCapture
+      stderr <- waitForStderrCapture
+      return $
+        ProcessResult
+          { stdout,
+            stderr,
+            exitCode
+          }
+
+withCreateProcess :: String -> CreateProcess -> (Maybe Handle -> Maybe Handle -> Maybe Handle -> ProcessHandle -> IO a) -> IO a
+withCreateProcess message createProcess action =
+  bracket
+    (createProcess_ message createProcess)
+    cleanupProcess
+    (\(mStdin, mStdout, mStderr, processHandle) -> action mStdin mStdout mStderr processHandle)
 
 data OutputStreamHandler = OutputStreamHandler
   { stdStream :: StdStream,
