@@ -31,6 +31,7 @@ import System.Process
 data ProcessConfiguration = ProcessConfiguration
   { executable :: Maybe String,
     arguments :: [String],
+    environ :: Maybe [(String, String)],
     workingDir :: Maybe FilePath,
     throwOnError :: Bool,
     stdinConfig :: StdinConfig,
@@ -56,6 +57,7 @@ cmd executable =
   ProcessConfiguration
     { executable = Just executable,
       arguments = [],
+      environ = Nothing,
       workingDir = Nothing,
       throwOnError = True,
       stdinConfig = InheritStdin,
@@ -88,7 +90,8 @@ runProcess config = do
             NoStdinStream -> NoStream,
           std_out = stdStream stdoutHandler,
           std_err = stdStream stderrHandler,
-          delegate_ctlc = delegateCtlc config
+          delegate_ctlc = delegateCtlc config,
+          env = environ config
         }
     )
     $ \_ mStdout mStderr handle -> do

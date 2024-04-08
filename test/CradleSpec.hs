@@ -331,6 +331,24 @@ spec = do
         waitFor $ do
           readFile "received-signal" `shouldReturn` "received signal: 15"
 
+    describe "environment" $ do
+      it "inherits the current environment" $ do
+        (Just expected) <- lookupEnv "TMP"
+        writePythonScript "exe" "print(os.environ.get('TMP', 'None'))"
+        StdoutTrimmed stdout <- run $ cmd "./exe"
+        stdout `shouldBe` cs expected
+
+      it "overrides the whole environment when environ is set" $ do
+        writePythonScript "exe" "print(os.environ.get('TMP', 'None'))"
+        StdoutTrimmed stdout <- run $ cmd "./exe" & setEnviron (Just [("NOTTMP", "foo")])
+        stdout `shouldBe` cs "None"
+
+      it "can set the environment" $ do
+        let newTmp = "/foo"
+        writePythonScript "exe" "print(os.environ.get('TMP', 'None'))"
+        StdoutTrimmed stdout <- run $ cmd "./exe" & setEnviron (Just [("TMP", newTmp)])
+        stdout `shouldBe` cs newTmp
+
 writePythonScript :: FilePath -> String -> IO ()
 writePythonScript file code = do
   pythonPath <- getEnv "PYTHON_BIN_PATH"

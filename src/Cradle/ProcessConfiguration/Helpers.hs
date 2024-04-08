@@ -3,6 +3,7 @@
 module Cradle.ProcessConfiguration.Helpers where
 
 import Cradle.ProcessConfiguration
+import Data.Bifunctor (bimap)
 import Data.String.Conversions (ConvertibleStrings, cs)
 import System.IO (Handle)
 
@@ -37,6 +38,14 @@ silenceStderr config =
 setDelegateCtrlC :: ProcessConfiguration -> ProcessConfiguration
 setDelegateCtrlC config =
   config {delegateCtlc = True}
+
+setEnviron ::
+  ConvertibleStrings s String =>
+  Maybe [(s, s)] ->
+  ProcessConfiguration ->
+  ProcessConfiguration
+setEnviron env config =
+  config {environ = map (bimap cs cs) <$> env}
 
 setWorkingDir :: FilePath -> ProcessConfiguration -> ProcessConfiguration
 setWorkingDir dir config =
