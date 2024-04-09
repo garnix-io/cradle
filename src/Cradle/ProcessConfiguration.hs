@@ -74,7 +74,8 @@ showCommand config = unwords (executable config : arguments config)
 data ProcessResult = ProcessResult
   { exitCode :: ExitCode,
     stdout :: Maybe ByteString,
-    stderr :: Maybe ByteString
+    stderr :: Maybe ByteString,
+    processConfiguration :: ProcessConfiguration
   }
 
 runProcess :: ProcessConfiguration -> IO ProcessResult
@@ -109,7 +110,8 @@ runProcess config = do
         ProcessResult
           { stdout,
             stderr,
-            exitCode
+            exitCode,
+            processConfiguration = config
           }
 
 withCreateProcess :: String -> CreateProcess -> (Maybe Handle -> Maybe Handle -> Maybe Handle -> ProcessHandle -> IO a) -> IO a
