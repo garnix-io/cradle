@@ -58,7 +58,7 @@ spec = do
                               && ioe_type e == NoSuchThing
                         )
 
-    it "allows to be run in MonadIO contexts" $ do
+    it "runs in MonadIO contexts" $ do
       writePythonScript "exe" "pass"
       runIdentityT $ do
         _ :: StdoutUntrimmed <- run $ cmd "./exe"
@@ -70,21 +70,21 @@ spec = do
               "exe"
               "open('file', 'w').write(' '.join(sys.argv[1:]))"
 
-      it "allows to pass in an argument" $ do
+      it "allows passing in an argument" $ do
         writeArgumentWriter
         run_ $
           cmd "./exe"
             & addArgs ["foo"]
         readFile "file" `shouldReturn` "foo"
 
-      it "allows to pass in multiple arguments" $ do
+      it "allows passing in multiple arguments" $ do
         writeArgumentWriter
         run_ $
           cmd "./exe"
             & addArgs ["foo", "bar"]
         readFile "file" `shouldReturn` "foo bar"
 
-      it "allows to split strings in haskell" $ do
+      it "allows splitting strings in haskell" $ do
         StdoutUntrimmed output <-
           run $
             cmd "printf"
@@ -100,7 +100,7 @@ spec = do
 
     describe "providing stdin" $ do
       describe "using handles" $ do
-        it "allows to pass in handle for stdin" $ do
+        it "allows passing in a handle for stdin" $ do
           writePythonScript "exe" "print(sys.stdin.read().strip())"
           (readEnd, writeEnd) <- createPipe
           _ <- forkIO $ do
@@ -112,18 +112,18 @@ spec = do
                 & setStdinHandle readEnd
           output `shouldBe` cs "test stdin\n"
 
-      it "allows to disable inheriting stdin" $ do
+      it "allows disabling inheriting stdin" $ do
         writePythonScript "exe" "print(sys.stdin)"
         StdoutTrimmed output <- run $ cmd "./exe" & setNoStdin
         output `shouldBe` cs "None"
 
     describe "capturing stdout" $ do
-      it "allows to capture stdout" $ do
+      it "allows capturing stdout" $ do
         writePythonScript "exe" "print('output')"
         StdoutUntrimmed stdout <- run $ cmd "./exe"
         stdout `shouldBe` cs "output\n"
 
-      it "allows to capture stdout *and* pass in arguments" $ do
+      it "allows capturing stdout *and* pass in arguments" $ do
         writePythonScript "exe" "print(' '.join(sys.argv[1:]))"
         StdoutUntrimmed output <-
           run $
@@ -151,7 +151,7 @@ spec = do
         output `shouldBe` ""
 
       describe "StdoutTrimmed" $ do
-        it "allows to capture the stripped stdout" $ do
+        it "allows capturing the stripped stdout" $ do
           writePythonScript "exe" "print('foo')"
           StdoutTrimmed output <- run $ cmd "./exe" & addArgs ["foo"]
           output `shouldBe` cs "foo"
@@ -167,7 +167,7 @@ spec = do
         length output `shouldBe` 2 ^ (22 :: Int)
 
       describe "using handles" $ do
-        it "allows to send stdout to a handle" $ do
+        it "allows sending stdout to a handle" $ do
           writePythonScript "exe" "print('foo')"
           (readEnd, writeEnd) <- createPipe
           run_ $ cmd "./exe" & setStdoutHandle writeEnd
@@ -198,7 +198,7 @@ spec = do
           hGetContents readEnd `shouldReturn` cs "foo\nbar\n"
 
     describe "capture stderr" $ do
-      it "allows to capture stderr" $ do
+      it "allows capturing stderr" $ do
         writePythonScript "exe" "print('output', file=sys.stderr)"
         Stderr stderr <- run $ cmd "./exe"
         stderr `shouldBe` cs "output\n"
@@ -221,7 +221,7 @@ spec = do
         output `shouldBe` ""
 
       describe "using handles" $ do
-        it "allows to send stderr to a handle" $ do
+        it "allows sending stderr to a handle" $ do
           writePythonScript "exe" "print('foo', file=sys.stderr)"
           (readEnd, writeEnd) <- createPipe
           run_ $
@@ -253,7 +253,7 @@ spec = do
           hClose writeEnd
           hGetContents readEnd `shouldReturn` cs "foo\nbar\n"
 
-    it "allows to capture both stdout and stderr" $ do
+    it "allows capturing both stdout and stderr" $ do
       writePythonScript "exe" "print('out') ; print('err', file=sys.stderr)"
       (StdoutUntrimmed out, Stderr err) <- run $ cmd "./exe"
       (out, err) `shouldBe` (cs "out\n", cs "err\n")
@@ -273,7 +273,7 @@ spec = do
         writePythonScript "exe" "pass"
         run (cmd "./exe") `shouldReturn` ExitSuccess
 
-      it "allows to capture exitcodes and stdout" $ do
+      it "allows capturing exitcodes and stdout" $ do
         writePythonScript "exe" "print('foo'); sys.exit(42)"
         (exitCode, StdoutTrimmed stdout) <- run $ cmd "./exe"
         stdout `shouldBe` cs "foo"
@@ -286,7 +286,7 @@ spec = do
         cwd <- getCurrentDirectory
         stdout `shouldBe` cs cwd
 
-      it "allows to set the working directory" $ do
+      it "allows setting the working directory" $ do
         writePythonScript "exe" "print(os.getcwd())"
         createDirectory "dir"
         cwd <- getCurrentDirectory
