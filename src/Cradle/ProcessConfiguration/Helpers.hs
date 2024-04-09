@@ -39,6 +39,7 @@ setDelegateCtrlC :: ProcessConfiguration -> ProcessConfiguration
 setDelegateCtrlC config =
   config {delegateCtlc = True}
 
+-- modifyEnvVar :: String -> (Maybe String -> Maybe String) -> ProcessConfiguration -> ProcessConfiguration
 setEnviron ::
   ConvertibleStrings s String =>
   Maybe [(s, s)] ->
