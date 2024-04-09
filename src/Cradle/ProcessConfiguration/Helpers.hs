@@ -46,8 +46,8 @@ modifyEnvVar ::
   ProcessConfiguration
 modifyEnvVar name f config =
   config
-    { environModification =
-        Just $ maybe newModification (newModification .) $ environModification config
+    { environmentModification =
+        Just $ maybe newModification (newModification .) $ environmentModification config
     }
   where
     newModification :: [(String, String)] -> [(String, String)]
