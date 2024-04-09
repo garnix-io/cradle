@@ -395,7 +395,7 @@ spec = do
           stdout `shouldBe` cs "foo\nbar"
 
         it "allows modifying environment variables multiple times" $ do
-          writePythonScript "exe" $ "print(os.environ.get('TEST_ENV_VAR'))"
+          writePythonScript "exe" "print(os.environ.get('TEST_ENV_VAR'))"
           StdoutTrimmed stdout <-
             run $
               cmd "./exe"

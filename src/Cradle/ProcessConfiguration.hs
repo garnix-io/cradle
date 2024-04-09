@@ -82,8 +82,7 @@ runProcess config = do
   let stdoutHandler = outputStreamHandler $ stdoutConfig config
       stderrHandler = outputStreamHandler $ stderrConfig config
   environment <- forM (environModification config) $ \f -> do
-    parentEnvironment <- getEnvironment
-    return $ f parentEnvironment
+    f <$> getEnvironment
   withCreateProcess
     "Cradle.run"
     ( (proc executable (arguments config))
