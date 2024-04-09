@@ -23,6 +23,7 @@ import System.IO.Silently
 import System.Process (createPipe)
 import Test.Hspec
 import Test.Mockery.Directory
+import Test.Mockery.Environment (withModifiedEnvironment)
 import Prelude hiding (getContents, length)
 
 spec :: Spec
@@ -332,22 +333,75 @@ spec = do
           readFile "received-signal" `shouldReturn` "received signal: 15"
 
     describe "environment" $ do
-      it "inherits the current environment" $ do
-        (Just expected) <- lookupEnv "TMP"
-        writePythonScript "exe" "print(os.environ.get('TMP', 'None'))"
-        StdoutTrimmed stdout <- run $ cmd "./exe"
-        stdout `shouldBe` cs expected
+      it "inherits the environment (by default)" $ do
+        withModifiedEnvironment [("TEST_ENV_VAR", "foo")] $ do
+          writePythonScript "exe" "print(os.environ.get('TEST_ENV_VAR'))"
+          StdoutTrimmed stdout <- run $ cmd "./exe"
+          stdout `shouldBe` cs "foo"
 
-      it "overrides the whole environment when environ is set" $ do
-        writePythonScript "exe" "print(os.environ.get('TMP', 'None'))"
-        StdoutTrimmed stdout <- run $ cmd "./exe" & setEnviron (Just [("NOTTMP", "foo")])
-        stdout `shouldBe` cs "None"
+      describe "modifyEnvVar" $ do
+        it "allows setting environment variables" $ do
+          writePythonScript "exe" "print(os.environ.get('TEST_ENV_VAR'))"
+          StdoutTrimmed stdout <-
+            run $
+              cmd "./exe"
+                & modifyEnvVar "TEST_ENV_VAR" (const $ Just "foo")
+          stdout `shouldBe` cs "foo"
 
-      it "can set the environment" $ do
-        let newTmp = "/foo"
-        writePythonScript "exe" "print(os.environ.get('TMP', 'None'))"
-        StdoutTrimmed stdout <- run $ cmd "./exe" & setEnviron (Just [("TMP", newTmp)])
-        stdout `shouldBe` cs newTmp
+        it "doesn't overwrite existing environment variables" $ do
+          withModifiedEnvironment [("TEST_ENV_VAR", "foo")] $ do
+            writePythonScript "exe" "print(os.environ.get('TEST_ENV_VAR'))"
+            StdoutTrimmed stdout <-
+              run $
+                cmd "./exe"
+                  & modifyEnvVar "OTHER_ENV_VAR" (const $ Just "bar")
+            stdout `shouldBe` cs "foo"
+
+        it "allows modifying environment variables" $ do
+          withModifiedEnvironment [("TEST_ENV_VAR", "foo"), ("OTHER_VAR", "bar")] $ do
+            writePythonScript "exe" $
+              unindent
+                [i|
+                  print(os.environ.get('TEST_ENV_VAR'))
+                  print(os.environ.get('OTHER_VAR'))
+                |]
+            StdoutTrimmed stdout <-
+              run $
+                cmd "./exe"
+                  & modifyEnvVar "TEST_ENV_VAR" (fmap reverse)
+            stdout `shouldBe` cs "oof\nbar"
+
+        it "allows removing environment variables" $ do
+          withModifiedEnvironment [("TEST_ENV_VAR", "foo")] $ do
+            writePythonScript "exe" "print(os.environ.get('TEST_ENV_VAR'))"
+            StdoutTrimmed stdout <-
+              run $
+                cmd "./exe"
+                  & modifyEnvVar "TEST_ENV_VAR" (const Nothing)
+            stdout `shouldBe` cs "None"
+
+        it "allows setting multiple environment variables" $ do
+          writePythonScript "exe" $
+            unindent
+              [i|
+                print(os.environ.get('TEST_ENV_VAR'))
+                print(os.environ.get('OTHER_VAR'))
+              |]
+          StdoutTrimmed stdout <-
+            run $
+              cmd "./exe"
+                & modifyEnvVar "TEST_ENV_VAR" (const $ Just "foo")
+                & modifyEnvVar "OTHER_VAR" (const $ Just "bar")
+          stdout `shouldBe` cs "foo\nbar"
+
+        it "allows modifying environment variables multiple times" $ do
+          writePythonScript "exe" $ "print(os.environ.get('TEST_ENV_VAR'))"
+          StdoutTrimmed stdout <-
+            run $
+              cmd "./exe"
+                & modifyEnvVar "TEST_ENV_VAR" (const $ Just "foo")
+                & modifyEnvVar "TEST_ENV_VAR" (fmap reverse)
+          stdout `shouldBe` cs "oof"
 
 writePythonScript :: FilePath -> String -> IO ()
 writePythonScript file code = do

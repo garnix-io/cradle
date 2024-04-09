@@ -15,6 +15,7 @@ import Control.Concurrent
 import Control.Exception
 import Control.Monad
 import Data.ByteString (ByteString, hGetContents)
+import System.Environment (getEnvironment)
 import System.Exit
 import System.IO (Handle)
 import System.Posix.Internals (hostIsThreaded)
@@ -31,7 +32,7 @@ import System.Process
 data ProcessConfiguration = ProcessConfiguration
   { executable :: Maybe String,
     arguments :: [String],
-    environ :: Maybe [(String, String)],
+    environModification :: Maybe ([(String, String)] -> [(String, String)]),
     workingDir :: Maybe FilePath,
     throwOnError :: Bool,
     stdinConfig :: StdinConfig,
@@ -57,7 +58,7 @@ cmd executable =
   ProcessConfiguration
     { executable = Just executable,
       arguments = [],
-      environ = Nothing,
+      environModification = Nothing,
       workingDir = Nothing,
       throwOnError = True,
       stdinConfig = InheritStdin,
@@ -80,6 +81,9 @@ runProcess config = do
     Nothing -> throwIO $ ErrorCall "Cradle: no executable given"
   let stdoutHandler = outputStreamHandler $ stdoutConfig config
       stderrHandler = outputStreamHandler $ stderrConfig config
+  environment <- forM (environModification config) $ \f -> do
+    parentEnvironment <- getEnvironment
+    return $ f parentEnvironment
   withCreateProcess
     "Cradle.run"
     ( (proc executable (arguments config))
@@ -91,7 +95,7 @@ runProcess config = do
           std_out = stdStream stdoutHandler,
           std_err = stdStream stderrHandler,
           delegate_ctlc = delegateCtlc config,
-          env = environ config
+          env = environment
         }
     )
     $ \_ mStdout mStderr handle -> do

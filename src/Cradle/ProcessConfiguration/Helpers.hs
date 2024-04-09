@@ -1,9 +1,9 @@
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE TupleSections #-}
 
 module Cradle.ProcessConfiguration.Helpers where
 
 import Cradle.ProcessConfiguration
-import Data.Bifunctor (bimap)
 import Data.String.Conversions (ConvertibleStrings, cs)
 import System.IO (Handle)
 
@@ -39,14 +39,21 @@ setDelegateCtrlC :: ProcessConfiguration -> ProcessConfiguration
 setDelegateCtrlC config =
   config {delegateCtlc = True}
 
--- modifyEnvVar :: String -> (Maybe String -> Maybe String) -> ProcessConfiguration -> ProcessConfiguration
-setEnviron ::
-  ConvertibleStrings s String =>
-  Maybe [(s, s)] ->
+modifyEnvVar ::
+  String ->
+  (Maybe String -> Maybe String) ->
   ProcessConfiguration ->
   ProcessConfiguration
-setEnviron env config =
-  config {environ = map (bimap cs cs) <$> env}
+modifyEnvVar name f config =
+  config
+    { environModification =
+        Just $ maybe newModification (newModification .) $ environModification config
+    }
+  where
+    newModification :: [(String, String)] -> [(String, String)]
+    newModification env =
+      maybe [] (pure . (name,)) (f $ lookup name env)
+        ++ filter ((/= name) . fst) env
 
 setWorkingDir :: FilePath -> ProcessConfiguration -> ProcessConfiguration
 setWorkingDir dir config =
