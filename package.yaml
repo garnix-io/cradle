@@ -26,6 +26,7 @@ tests:
       - filepath
       - hspec
       - hspec-discover
+      - interpolate
       - mockery
       - silently
       - transformers

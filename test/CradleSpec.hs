@@ -1,13 +1,18 @@
+{-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# OPTIONS_GHC -Wno-type-defaults #-}
 
 module CradleSpec where
 
-import Control.Concurrent (forkIO)
+import Control.Concurrent (forkIO, killThread, threadDelay)
 import Control.Exception
+import Control.Monad (void, when)
 import Control.Monad.Trans.Identity
 import Cradle
 import Data.ByteString (length)
 import Data.String.Conversions
+import Data.String.Interpolate (i)
+import Data.String.Interpolate.Util (unindent)
 import Data.Text (Text)
 import GHC.IO.Exception
 import System.Directory
@@ -303,6 +308,29 @@ spec = do
         output `shouldBe` cs "foo"
         after `shouldBe` before
 
+    describe "when receiving an async exception" $ do
+      it "sends a signal to the child process" $ do
+        writePythonScript "exe" $
+          unindent
+            [i|
+              import signal
+              import time
+              import os
+
+              def handler(signal, stack_frame):
+                open('received-signal', 'a').write(f'received signal: {signal}')
+                exit(0)
+
+              signal.signal(signal.SIGTERM, handler)
+              open('running', 'a').write('')
+              time.sleep(3)
+            |]
+        thread <- forkIO $ run_ $ cmd "./exe"
+        waitFor $ void $ readFile "running"
+        killThread thread
+        waitFor $ do
+          readFile "received-signal" `shouldReturn` "received signal: 15"
+
 writePythonScript :: FilePath -> String -> IO ()
 writePythonScript file code = do
   pythonPath <- getEnv "PYTHON_BIN_PATH"
@@ -322,3 +350,17 @@ shouldThrowShow action expected = do
   case result of
     Nothing -> fail $ "action didn't throw: " <> expected
     Just e -> show e `shouldBe` expected
+
+waitFor :: IO () -> IO ()
+waitFor action = go 10
+  where
+    go n = do
+      mException :: Either SomeException () <- try action
+      case mException of
+        Right () -> return ()
+        Left exception ->
+          if n <= 0
+            then throwIO $ ErrorCall $ "waitFor timed out: " <> show exception
+            else do
+              threadDelay 100000
+              go (n - 1)
