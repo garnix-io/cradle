@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE TupleSections #-}
 
 module Cradle.ProcessConfiguration.Helpers where
 
@@ -37,6 +38,22 @@ silenceStderr config =
 setDelegateCtrlC :: ProcessConfiguration -> ProcessConfiguration
 setDelegateCtrlC config =
   config {delegateCtlc = True}
+
+modifyEnvVar ::
+  String ->
+  (Maybe String -> Maybe String) ->
+  ProcessConfiguration ->
+  ProcessConfiguration
+modifyEnvVar name f config =
+  config
+    { environmentModification =
+        Just $ maybe newModification (newModification .) $ environmentModification config
+    }
+  where
+    newModification :: [(String, String)] -> [(String, String)]
+    newModification env =
+      maybe [] (pure . (name,)) (f $ lookup name env)
+        ++ filter ((/= name) . fst) env
 
 setWorkingDir :: FilePath -> ProcessConfiguration -> ProcessConfiguration
 setWorkingDir dir config =
