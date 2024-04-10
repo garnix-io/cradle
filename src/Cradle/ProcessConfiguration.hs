@@ -30,7 +30,7 @@ import System.Process
   )
 
 data ProcessConfiguration = ProcessConfiguration
-  { executable :: Maybe String,
+  { executable :: String,
     arguments :: [String],
     environmentModification :: Maybe ([(String, String)] -> [(String, String)]),
     workingDir :: Maybe FilePath,
@@ -56,7 +56,7 @@ data OutputStreamConfig
 cmd :: String -> ProcessConfiguration
 cmd executable =
   ProcessConfiguration
-    { executable = Just executable,
+    { executable = executable,
       arguments = [],
       environmentModification = Nothing,
       workingDir = Nothing,
@@ -70,22 +70,20 @@ cmd executable =
 data ProcessResult = ProcessResult
   { exitCode :: ExitCode,
     stdout :: Maybe ByteString,
-    stderr :: Maybe ByteString
+    stderr :: Maybe ByteString,
+    processConfiguration :: ProcessConfiguration
   }
 
 runProcess :: ProcessConfiguration -> IO ProcessResult
 runProcess config = do
   assertThreadedRuntime
-  executable <- case executable config of
-    Just executable -> return executable
-    Nothing -> throwIO $ ErrorCall "Cradle: no executable given"
   let stdoutHandler = outputStreamHandler $ stdoutConfig config
       stderrHandler = outputStreamHandler $ stderrConfig config
   environment <- forM (environmentModification config) $ \f -> do
     f <$> getEnvironment
   withCreateProcess
     "Cradle.run"
-    ( (proc executable (arguments config))
+    ( (proc (executable config) (arguments config))
         { cwd = workingDir config,
           std_in = case stdinConfig config of
             InheritStdin -> Inherit
@@ -101,14 +99,15 @@ runProcess config = do
       waitForStdoutCapture <- startCapturing stdoutHandler mStdout
       waitForStderrCapture <- startCapturing stderrHandler mStderr
       exitCode <- waitForProcess handle
-      throwWhenNonZero executable config exitCode
+      throwWhenNonZero config exitCode
       stdout <- waitForStdoutCapture
       stderr <- waitForStderrCapture
       return $
         ProcessResult
           { stdout,
             stderr,
-            exitCode
+            exitCode,
+            processConfiguration = config
           }
 
 withCreateProcess :: String -> CreateProcess -> (Maybe Handle -> Maybe Handle -> Maybe Handle -> ProcessHandle -> IO a) -> IO a
@@ -148,8 +147,8 @@ assertThreadedRuntime =
   when (not hostIsThreaded) $ do
     throwIO $ ErrorCall "Cradle needs the ghc's threaded runtime system to work correctly. Use the ghc option '-threaded'."
 
-throwWhenNonZero :: String -> ProcessConfiguration -> ExitCode -> IO ()
-throwWhenNonZero executable config exitCode = do
+throwWhenNonZero :: ProcessConfiguration -> ExitCode -> IO ()
+throwWhenNonZero config exitCode = do
   when (throwOnError config) $ do
     case exitCode of
       ExitSuccess -> return ()
@@ -159,4 +158,4 @@ throwWhenNonZero executable config exitCode = do
             "command failed with exitcode "
               <> show exitCode
               <> ": "
-              <> executable
+              <> executable config
