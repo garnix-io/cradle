@@ -7,15 +7,17 @@ module Cradle.Output
     Output (..),
     StdoutUntrimmed (..),
     StdoutTrimmed (..),
-    Stderr (..),
+    StdoutRaw (..),
+    StderrRaw (..),
   )
 where
 
 import Control.Arrow ((>>>))
 import Cradle.ProcessConfiguration
-import Data.ByteString.Char8
-import Data.Char
+import Data.ByteString (ByteString)
 import Data.Proxy
+import Data.String.Conversions (cs)
+import Data.Text (Text, strip)
 import GHC.Generics (Generic)
 import System.Exit
 import Prelude hiding (dropWhile)
@@ -112,41 +114,50 @@ instance
     )
 
 newtype StdoutUntrimmed = StdoutUntrimmed
-  { fromStdoutUntrimmed :: ByteString
+  { fromStdoutUntrimmed :: Text
   }
   deriving stock (Show, Eq, Ord, Generic)
 
 instance Output StdoutUntrimmed where
   configure Proxy config = config {stdoutConfig = CaptureStream}
   extractOutput result =
-    case stdout result of
-      Nothing -> error "impossible: stdout not captured"
-      Just stdout -> StdoutUntrimmed stdout
+    let StdoutRaw output = extractOutput result
+     in StdoutUntrimmed $ cs output
 
 newtype StdoutTrimmed = StdoutTrimmed
-  { fromStdoutTrimmed :: ByteString
+  { fromStdoutTrimmed :: Text
   }
   deriving stock (Show, Eq, Ord, Generic)
 
 instance Output StdoutTrimmed where
   configure Proxy config = config {stdoutConfig = CaptureStream}
   extractOutput result =
-    let StdoutUntrimmed output = extractOutput result
-     in StdoutTrimmed $ trim output
-    where
-      trim = dropWhile isSpace . dropWhileEnd isSpace
+    let StdoutRaw output = extractOutput result
+     in StdoutTrimmed $ strip $ cs output
 
-newtype Stderr = Stderr
+newtype StdoutRaw = StdoutRaw
+  { fromStdoutRaw :: ByteString
+  }
+  deriving stock (Show, Eq, Ord, Generic)
+
+instance Output StdoutRaw where
+  configure Proxy config = config {stdoutConfig = CaptureStream}
+  extractOutput result =
+    case stdout result of
+      Nothing -> error "impossible: stdout not captured"
+      Just output -> StdoutRaw output
+
+newtype StderrRaw = StderrRaw
   { fromStderr :: ByteString
   }
   deriving stock (Show, Eq, Ord, Generic)
 
-instance Output Stderr where
+instance Output StderrRaw where
   configure Proxy config = config {stderrConfig = CaptureStream}
   extractOutput result =
     case stderr result of
       Nothing -> error "impossible: stderr not captured"
-      Just stderr -> Stderr stderr
+      Just stderr -> StderrRaw stderr
 
 instance Output ExitCode where
   configure Proxy config = config {throwOnError = False}
