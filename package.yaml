@@ -32,10 +32,8 @@ tests:
       - transformers
   readme:
     main: README.lhs
-    source-dirs:
-      - src
-      - .
     dependencies:
+      - cradle
       - markdown-unlit
     ghc-options:
       - -pgmL markdown-unlit

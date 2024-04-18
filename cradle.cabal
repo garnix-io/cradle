@@ -31,18 +31,12 @@ test-suite readme
   type: exitcode-stdio-1.0
   main-is: README.lhs
   other-modules:
-      Cradle
-      Cradle.Output
-      Cradle.ProcessConfiguration
-      Cradle.ProcessConfiguration.Helpers
       Paths_cradle
-  hs-source-dirs:
-      src
-      ./
   ghc-options: -Wall -Wno-name-shadowing -threaded -pgmL markdown-unlit
   build-depends:
       base
     , bytestring
+    , cradle
     , markdown-unlit
     , process
     , string-conversions
