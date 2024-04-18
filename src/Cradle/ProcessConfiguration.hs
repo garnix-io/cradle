@@ -56,7 +56,6 @@ data OutputStreamConfig = OutputStreamConfig
     -- @Nothing@ means use the default behavior (which depends on the @capture@
     -- field).
     setHandles :: Maybe [Handle]
-    -- todo check haddock
   }
   deriving stock (Show)
 
