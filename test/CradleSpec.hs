@@ -6,7 +6,7 @@ module CradleSpec where
 
 import Control.Concurrent (forkIO, killThread, threadDelay)
 import Control.Exception
-import Control.Monad (void)
+import Control.Monad (void, when)
 import Control.Monad.Trans.Identity
 import Cradle
 import Data.ByteString (pack)
@@ -182,14 +182,14 @@ spec = do
         it "allows sending stdout to a handle" $ do
           writePythonScript "exe" "print('foo')"
           (readEnd, writeEnd) <- createPipe
-          run_ $ cmd "./exe" & setStdoutHandle writeEnd
+          run_ $ cmd "./exe" & addStdoutHandle writeEnd
           hClose writeEnd
           hGetContents readEnd `shouldReturn` cs "foo\n"
 
         it "does not relay stdout when it's captured (by default)" $ do
           writePythonScript "exe" "print('foo')"
           (_readEnd, writeEnd) <- createPipe
-          stdout <- capture_ $ run_ $ cmd "./exe" & setStdoutHandle writeEnd
+          stdout <- capture_ $ run_ $ cmd "./exe" & addStdoutHandle writeEnd
           hClose writeEnd
           stdout `shouldBe` ""
 
@@ -199,15 +199,40 @@ spec = do
           run_ $
             cmd "./exe"
               & addArgs ["foo"]
-              & setStdoutHandle writeEnd
+              & addStdoutHandle writeEnd
           hIsClosed writeEnd `shouldReturn` False
           hIsClosed readEnd `shouldReturn` False
           run_ $
             cmd "./exe"
               & addArgs ["bar"]
-              & setStdoutHandle writeEnd
+              & addStdoutHandle writeEnd
           hClose writeEnd
           hGetContents readEnd `shouldReturn` cs "foo\nbar\n"
+
+        it "allows capturing stdout *and* passing in a stdout handle" $ do
+          writePythonScript "exe" "print('foo')"
+          (readEnd, writeEnd) <- createPipe
+          StdoutUntrimmed output <-
+            run $
+              cmd "./exe"
+                & addStdoutHandle writeEnd
+          hClose writeEnd
+          handleOutput <- hGetContents readEnd
+          (output, handleOutput) `shouldBe` (cs "foo\n", "foo\n")
+
+        it "allows specifying multiple stdout handles" $ do
+          writePythonScript "exe" "print('foo')"
+          (readEnd1, writeEnd1) <- createPipe
+          (readEnd2, writeEnd2) <- createPipe
+          run_ $
+            cmd "./exe"
+              & addStdoutHandle writeEnd1
+              & addStdoutHandle writeEnd2
+          hClose writeEnd1
+          hClose writeEnd2
+          output1 <- hGetContents readEnd1
+          output2 <- hGetContents readEnd2
+          (output1, output2) `shouldBe` ("foo\n", "foo\n")
 
     describe "capture stderr" $ do
       it "allows capturing stderr" $ do
@@ -238,14 +263,14 @@ spec = do
           (readEnd, writeEnd) <- createPipe
           run_ $
             cmd "./exe"
-              & setStderrHandle writeEnd
+              & addStderrHandle writeEnd
           hClose writeEnd
           hGetContents readEnd `shouldReturn` cs "foo\n"
 
         it "does not relay stderr when it's captured (by default)" $ do
           writePythonScript "exe" "print('foo', file=sys.stderr)"
           (_readEnd, writeEnd) <- createPipe
-          stderr <- hCapture_ [stderr] $ run_ $ cmd "./exe" & setStderrHandle writeEnd
+          stderr <- hCapture_ [stderr] $ run_ $ cmd "./exe" & addStderrHandle writeEnd
           hClose writeEnd
           stderr `shouldBe` ""
 
@@ -254,16 +279,36 @@ spec = do
           (readEnd, writeEnd) <- createPipe
           run_ $
             cmd "./exe"
-              & setStderrHandle writeEnd
+              & addStderrHandle writeEnd
               & addArgs ["foo"]
           hIsClosed writeEnd `shouldReturn` False
           hIsClosed readEnd `shouldReturn` False
           run_ $
             cmd "./exe"
-              & setStderrHandle writeEnd
+              & addStderrHandle writeEnd
               & addArgs ["bar"]
           hClose writeEnd
           hGetContents readEnd `shouldReturn` cs "foo\nbar\n"
+
+        it "allows writing a wrapper that captures stderr" $ do
+          let wrapper :: Output output => ProcessConfiguration -> IO output
+              wrapper pc = do
+                (exitCode, StderrRaw err, o) <- run pc
+                when (exitCode /= ExitSuccess) $ do
+                  throwIO $ ErrorCall $ "stderr:\n" <> cs err
+                return o
+          writePythonScript "exe" "print('foo', file=sys.stderr)"
+          (readEnd, writeEnd) <- createPipe
+          StderrRaw output <-
+            wrapper $
+              cmd "./exe"
+                & addStderrHandle writeEnd
+          hClose writeEnd
+          handleOutput <- hGetContents readEnd
+          (output, handleOutput) `shouldBe` (cs "foo\n", "foo\n")
+          writePythonScript "exe" "print('foo', file=sys.stderr); sys.exit(42)"
+          try (wrapper $ cmd "./exe" :: IO ())
+            `shouldReturn` Left (ErrorCall "stderr:\nfoo\n")
 
     it "allows capturing both stdout and stderr" $ do
       writePythonScript "exe" "print('out') ; print('err', file=sys.stderr)"
