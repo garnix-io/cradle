@@ -75,7 +75,8 @@ module Cradle
     Output,
     StdoutUntrimmed (..),
     StdoutTrimmed (..),
-    Stderr (..),
+    StdoutRaw (..),
+    StderrRaw (..),
     ExitCode (..),
   )
 where

@@ -6,14 +6,15 @@ module CradleSpec where
 
 import Control.Concurrent (forkIO, killThread, threadDelay)
 import Control.Exception
-import Control.Monad (void, when)
+import Control.Monad (void)
 import Control.Monad.Trans.Identity
 import Cradle
-import Data.ByteString (length)
+import Data.ByteString (pack)
 import Data.String.Conversions
 import Data.String.Interpolate (i)
 import Data.String.Interpolate.Util (unindent)
 import Data.Text (Text)
+import qualified Data.Text
 import GHC.IO.Exception
 import System.Directory
 import System.Environment
@@ -165,7 +166,17 @@ spec = do
       it "handles bigger outputs correctly" $ do
         writePythonScript "exe" "print('x' * 2 ** 22)"
         StdoutTrimmed output <- run $ cmd "./exe"
-        length output `shouldBe` 2 ^ (22 :: Int)
+        Data.Text.length output `shouldBe` 2 ^ (22 :: Int)
+
+      it "allows capturing binary data" $ do
+        writePythonScript "exe" "sys.stdout.buffer.write(bytearray([0, 1, 2, 3]))"
+        StdoutRaw output <- run $ cmd "./exe"
+        output `shouldBe` pack [0, 1, 2, 3]
+
+      it "uses the replacement character when capturing invalid utf-8 as Text" $ do
+        writePythonScript "exe" "sys.stdout.buffer.write(b'foo-\\x80-bar')"
+        StdoutUntrimmed output <- run $ cmd "./exe"
+        output `shouldBe` cs "foo-�-bar"
 
       describe "using handles" $ do
         it "allows sending stdout to a handle" $ do
@@ -201,7 +212,7 @@ spec = do
     describe "capture stderr" $ do
       it "allows capturing stderr" $ do
         writePythonScript "exe" "print('output', file=sys.stderr)"
-        Stderr stderr <- run $ cmd "./exe"
+        StderrRaw stderr <- run $ cmd "./exe"
         stderr `shouldBe` cs "output\n"
 
       it "relays stderr when it's not captured (by default)" $ do
@@ -217,7 +228,7 @@ spec = do
       it "does not relay stderr when it's captured (by default)" $ do
         writePythonScript "exe" "print('foo', file=sys.stderr)"
         output <- hCapture_ [stderr] $ do
-          Stderr _ <- run $ cmd "./exe"
+          StderrRaw _ <- run $ cmd "./exe"
           return ()
         output `shouldBe` ""
 
@@ -256,7 +267,7 @@ spec = do
 
     it "allows capturing both stdout and stderr" $ do
       writePythonScript "exe" "print('out') ; print('err', file=sys.stderr)"
-      (StdoutUntrimmed out, Stderr err) <- run $ cmd "./exe"
+      (StdoutUntrimmed out, StderrRaw err) <- run $ cmd "./exe"
       (out, err) `shouldBe` (cs "out\n", cs "err\n")
 
     describe "exitcodes" $ do
