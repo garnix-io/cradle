@@ -30,6 +30,15 @@ tests:
       - mockery
       - silently
       - transformers
+  readme:
+    main: README.lhs
+    source-dirs:
+      - src
+      - .
+    dependencies:
+      - markdown-unlit
+    ghc-options:
+      - -pgmL markdown-unlit
 
 library:
   source-dirs:
