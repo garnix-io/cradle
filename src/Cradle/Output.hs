@@ -119,7 +119,8 @@ newtype StdoutUntrimmed = StdoutUntrimmed
   deriving stock (Show, Eq, Ord, Generic)
 
 instance Output StdoutUntrimmed where
-  configure Proxy config = config {stdoutConfig = CaptureStream}
+  configure Proxy config =
+    config {stdoutConfig = (stdoutConfig config) {capture = True}}
   extractOutput result =
     let StdoutRaw output = extractOutput result
      in StdoutUntrimmed $ cs output
@@ -130,7 +131,8 @@ newtype StdoutTrimmed = StdoutTrimmed
   deriving stock (Show, Eq, Ord, Generic)
 
 instance Output StdoutTrimmed where
-  configure Proxy config = config {stdoutConfig = CaptureStream}
+  configure Proxy config =
+    config {stdoutConfig = (stdoutConfig config) {capture = True}}
   extractOutput result =
     let StdoutRaw output = extractOutput result
      in StdoutTrimmed $ strip $ cs output
@@ -141,7 +143,8 @@ newtype StdoutRaw = StdoutRaw
   deriving stock (Show, Eq, Ord, Generic)
 
 instance Output StdoutRaw where
-  configure Proxy config = config {stdoutConfig = CaptureStream}
+  configure Proxy config =
+    config {stdoutConfig = (stdoutConfig config) {capture = True}}
   extractOutput result =
     case stdout result of
       Nothing -> error "impossible: stdout not captured"
@@ -153,7 +156,8 @@ newtype StderrRaw = StderrRaw
   deriving stock (Show, Eq, Ord, Generic)
 
 instance Output StderrRaw where
-  configure Proxy config = config {stderrConfig = CaptureStream}
+  configure Proxy config =
+    config {stderrConfig = (stderrConfig config) {capture = True}}
   extractOutput result =
     case stderr result of
       Nothing -> error "impossible: stderr not captured"

@@ -1,10 +1,13 @@
 {-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 
 module Cradle.ProcessConfiguration
   ( ProcessConfiguration (..),
     StdinConfig (..),
     OutputStreamConfig (..),
+    silenceDefault,
+    addHandle,
     cmd,
     ProcessResult (..),
     runProcess,
@@ -14,7 +17,7 @@ where
 import Control.Concurrent
 import Control.Exception
 import Control.Monad
-import Data.ByteString (ByteString, hGetContents)
+import Data.ByteString (ByteString, hGetContents, hGetSome, hPut, null)
 import System.Environment (getEnvironment)
 import System.Exit
 import System.IO (Handle)
@@ -46,12 +49,34 @@ data StdinConfig
   | UseStdinHandle Handle
   | NoStdinStream
 
-data OutputStreamConfig
-  = CaptureStream
-  | InheritStream
-  | IgnoreStream
-  | PipeStream Handle
+data OutputStreamConfig = OutputStreamConfig
+  { capture :: Bool,
+    -- | Handles that the user set for the output stream.
+    --
+    -- @Nothing@ means use the default behavior (which depends on the @capture@
+    -- field).
+    setHandles :: Maybe [Handle]
+  }
   deriving stock (Show)
+
+defaultOutputStreamConfig :: OutputStreamConfig
+defaultOutputStreamConfig = OutputStreamConfig False Nothing
+
+silenceDefault :: OutputStreamConfig -> OutputStreamConfig
+silenceDefault config =
+  config
+    { setHandles = case setHandles config of
+        Nothing -> Just []
+        Just handles -> Just handles
+    }
+
+addHandle :: Handle -> OutputStreamConfig -> OutputStreamConfig
+addHandle handle config =
+  config
+    { setHandles = case setHandles config of
+        Nothing -> Just [handle]
+        Just hs -> Just $ handle : hs
+    }
 
 cmd :: String -> ProcessConfiguration
 cmd executable =
@@ -62,8 +87,8 @@ cmd executable =
       workingDir = Nothing,
       throwOnError = True,
       stdinConfig = InheritStdin,
-      stdoutConfig = InheritStream,
-      stderrConfig = InheritStream,
+      stdoutConfig = defaultOutputStreamConfig,
+      stderrConfig = defaultOutputStreamConfig,
       delegateCtlc = False
     }
 
@@ -122,25 +147,62 @@ data OutputStreamHandler = OutputStreamHandler
     startCapturing :: Maybe Handle -> IO (IO (Maybe ByteString))
   }
 
+maxBufferSize :: Int
+maxBufferSize = 1024 * 1024
+
 outputStreamHandler :: OutputStreamConfig -> OutputStreamHandler
 outputStreamHandler config =
   OutputStreamHandler
     { stdStream = case config of
-        InheritStream -> Inherit
-        CaptureStream -> CreatePipe
-        IgnoreStream -> CreatePipe
-        PipeStream handle -> UseHandle handle,
-      startCapturing = \mHandle -> case (config, mHandle) of
-        (InheritStream, Nothing) -> return $ return Nothing
-        (CaptureStream, Just handle) -> do
+        OutputStreamConfig False Nothing -> Inherit
+        OutputStreamConfig False (Just [sink]) -> UseHandle sink
+        OutputStreamConfig _ _ -> CreatePipe,
+      startCapturing = case config of
+        OutputStreamConfig False Nothing -> expectNoHandle $ return $ return Nothing
+        OutputStreamConfig True Nothing -> expectHandle $ \handle -> do
           mvar <- newEmptyMVar
-          _ <- forkIO $ hGetContents handle >>= putMVar mvar . Just
-          return $ readMVar mvar
-        (IgnoreStream, Just _handle) -> return $ return Nothing
-        (PipeStream _handle, Nothing) -> return $ return Nothing
-        (_, Just _) -> throwIO $ ErrorCall "outputStreamHandler: pipe created unexpectedly"
-        (_, Nothing) -> throwIO $ ErrorCall "outputStreamHandler: pipe not created unexpectedly"
+          _ <- forkIO $ hGetContents handle >>= putMVar mvar
+          return $ Just <$> readMVar mvar
+        OutputStreamConfig False (Just []) -> expectHandle $ \_handle -> return $ return Nothing
+        OutputStreamConfig False (Just [_sink]) -> expectNoHandle $ return $ return Nothing
+        OutputStreamConfig False (Just sinks) -> expectHandle $ \handle -> do
+          mvar <- newEmptyMVar
+          _ <- forkIO $ do
+            let loop = do
+                  chunk <- hGetSome handle maxBufferSize
+                  if Data.ByteString.null chunk
+                    then return ()
+                    else do
+                      forM_ sinks $ \sink -> hPut sink chunk
+                      loop
+            loop
+            putMVar mvar ()
+          return $ do
+            readMVar mvar
+            return Nothing
+        OutputStreamConfig True (Just sinks) -> expectHandle $ \handle -> do
+          mvar <- newEmptyMVar
+          _ <- forkIO $ do
+            let loop acc = do
+                  chunk <- hGetSome handle maxBufferSize
+                  if Data.ByteString.null chunk
+                    then return acc
+                    else do
+                      forM_ sinks $ \sink -> hPut sink chunk
+                      loop $ acc <> chunk
+            loop mempty >>= putMVar mvar
+          return $ Just <$> readMVar mvar
     }
+  where
+    expectNoHandle :: IO a -> Maybe Handle -> IO a
+    expectNoHandle action = \case
+      Just _ -> throwIO $ ErrorCall "outputStreamHandler: pipe created unexpectedly"
+      Nothing -> action
+
+    expectHandle :: (Handle -> IO a) -> Maybe Handle -> IO a
+    expectHandle action = \case
+      Nothing -> throwIO $ ErrorCall "outputStreamHandler: pipe not created unexpectedly"
+      Just handle -> action handle
 
 assertThreadedRuntime :: IO ()
 assertThreadedRuntime =

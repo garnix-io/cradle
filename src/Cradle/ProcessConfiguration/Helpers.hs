@@ -19,21 +19,21 @@ setNoStdin :: ProcessConfiguration -> ProcessConfiguration
 setNoStdin config =
   config {stdinConfig = NoStdinStream}
 
-setStdoutHandle :: Handle -> ProcessConfiguration -> ProcessConfiguration
-setStdoutHandle handle config =
-  config {stdoutConfig = PipeStream handle}
+addStdoutHandle :: Handle -> ProcessConfiguration -> ProcessConfiguration
+addStdoutHandle handle config =
+  config {stdoutConfig = addHandle handle (stdoutConfig config)}
 
 silenceStdout :: ProcessConfiguration -> ProcessConfiguration
 silenceStdout config =
-  config {stdoutConfig = IgnoreStream}
+  config {stdoutConfig = silenceDefault (stdoutConfig config)}
 
-setStderrHandle :: Handle -> ProcessConfiguration -> ProcessConfiguration
-setStderrHandle handle config =
-  config {stderrConfig = PipeStream handle}
+addStderrHandle :: Handle -> ProcessConfiguration -> ProcessConfiguration
+addStderrHandle handle config =
+  config {stderrConfig = addHandle handle (stderrConfig config)}
 
 silenceStderr :: ProcessConfiguration -> ProcessConfiguration
 silenceStderr config =
-  config {stderrConfig = IgnoreStream}
+  config {stderrConfig = silenceDefault (stderrConfig config)}
 
 setDelegateCtrlC :: ProcessConfiguration -> ProcessConfiguration
 setDelegateCtrlC config =
