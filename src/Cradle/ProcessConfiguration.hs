@@ -177,9 +177,7 @@ outputStreamHandler config =
                       loop
             loop
             putMVar mvar ()
-          return $ do
-            readMVar mvar
-            return Nothing
+          return $ return Nothing
         OutputStreamConfig True (Just sinks) -> expectHandle $ \handle -> do
           mvar <- newEmptyMVar
           _ <- forkIO $ do
