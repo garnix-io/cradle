@@ -4,6 +4,7 @@
 
 module Cradle.ProcessConfiguration
   ( ProcessConfiguration (..),
+    showCommand,
     StdinConfig (..),
     OutputStreamConfig (..),
     silenceDefault,
@@ -91,6 +92,9 @@ cmd executable =
       stderrConfig = defaultOutputStreamConfig,
       delegateCtlc = False
     }
+
+showCommand :: ProcessConfiguration -> String
+showCommand config = unwords (executable config : arguments config)
 
 data ProcessResult = ProcessResult
   { exitCode :: ExitCode,
