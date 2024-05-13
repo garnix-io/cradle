@@ -6,9 +6,21 @@ cabal-version: 1.12
 
 name:           cradle
 version:        0.0.0.0
+synopsis:       A simpler process library
+description:    This library provides an intuitive, simple, and composable interface for
+                running system processes. Think of it as a higher-level `process`.
+category:       System
+homepage:       https://github.com/garnix-io/cradle#readme
+bug-reports:    https://github.com/garnix-io/cradle/issues
+author:         garnix team <dev@garnix.io>
+maintainer:     garnix team <dev@garnix.io>
 license:        BSD3
 license-file:   LICENSE
 build-type:     Simple
+
+source-repository head
+  type: git
+  location: https://github.com/garnix-io/cradle
 
 library
   exposed-modules:
@@ -22,7 +34,7 @@ library
       src
   ghc-options: -Wall -Wno-name-shadowing -threaded
   build-depends:
-      base
+      base >=4.5 && <5
     , bytestring
     , process
     , string-conversions
@@ -36,7 +48,7 @@ test-suite readme
       Paths_cradle
   ghc-options: -Wall -Wno-name-shadowing -threaded -pgmL markdown-unlit
   build-depends:
-      base
+      base >=4.5 && <5
     , bytestring
     , cradle
     , markdown-unlit
@@ -61,7 +73,7 @@ test-suite spec
       src
   ghc-options: -Wall -Wno-name-shadowing -threaded -fdefer-typed-holes
   build-depends:
-      base
+      base >=4.5 && <5
     , bytestring
     , directory
     , filepath

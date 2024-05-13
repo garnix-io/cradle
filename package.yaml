@@ -1,8 +1,16 @@
 name: cradle
 version: 0.0.0.0
+synopsis: A simpler process library
+description: |
+  This library provides an intuitive, simple, and composable interface for
+  running system processes. Think of it as a higher-level `process`.
+author: garnix team <dev@garnix.io>
+maintainer: garnix team <dev@garnix.io>
+github: garnix-io/cradle
+category: System
 
 dependencies:
-  - base
+  - base >= 4.5 && < 5
   - bytestring
   - process
   - string-conversions
