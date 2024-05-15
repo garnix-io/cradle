@@ -1,4 +1,5 @@
 {-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 
@@ -18,6 +19,7 @@ import Control.Concurrent
 import Control.Exception
 import Control.Monad
 import Data.ByteString (ByteString, hGetContents, hGetSome, hPut, null)
+import Data.String (IsString (..))
 import System.Environment (getEnvironment)
 import System.Exit
 import System.IO (Handle)
@@ -43,6 +45,10 @@ data ProcessConfiguration = ProcessConfiguration
     stderrConfig :: OutputStreamConfig,
     delegateCtlc :: Bool
   }
+
+instance IsString ProcessConfiguration where
+  fromString :: String -> ProcessConfiguration
+  fromString = cmd
 
 data StdinConfig
   = InheritStdin
