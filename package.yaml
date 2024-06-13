@@ -15,6 +15,7 @@ dependencies:
   - process
   - string-conversions
   - text
+  - unix
 
 ghc-options:
   - -Wall

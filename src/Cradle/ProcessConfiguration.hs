@@ -17,10 +17,11 @@ where
 import Control.Concurrent
 import Control.Exception
 import Control.Monad
+import Cradle.SafeUnix
 import Data.ByteString (ByteString, hGetContents, hGetSome, hPut, null)
 import System.Environment (getEnvironment)
 import System.Exit
-import System.IO (Handle)
+import System.IO (Handle, hClose)
 import System.Posix.Internals (hostIsThreaded)
 import System.Process
   ( CreateProcess (..),
@@ -47,6 +48,7 @@ data ProcessConfiguration = ProcessConfiguration
 data StdinConfig
   = InheritStdin
   | UseStdinHandle Handle
+  | StdinString ByteString
   | NoStdinStream
 
 data OutputStreamConfig = OutputStreamConfig
@@ -106,34 +108,32 @@ runProcess config = do
       stderrHandler = outputStreamHandler $ stderrConfig config
   environment <- forM (environmentModification config) $ \f -> do
     f <$> getEnvironment
-  withCreateProcess
-    "Cradle.run"
-    ( (proc (executable config) (arguments config))
-        { cwd = workingDir config,
-          std_in = case stdinConfig config of
-            InheritStdin -> Inherit
-            UseStdinHandle handle -> UseHandle handle
-            NoStdinStream -> NoStream,
-          std_out = stdStream stdoutHandler,
-          std_err = stdStream stderrHandler,
-          delegate_ctlc = delegateCtlc config,
-          env = environment
-        }
-    )
-    $ \_ mStdout mStderr handle -> do
-      waitForStdoutCapture <- startCapturing stdoutHandler mStdout
-      waitForStderrCapture <- startCapturing stderrHandler mStderr
-      exitCode <- waitForProcess handle
-      throwWhenNonZero config exitCode
-      stdout <- waitForStdoutCapture
-      stderr <- waitForStderrCapture
-      return $
-        ProcessResult
-          { stdout,
-            stderr,
-            exitCode,
-            processConfiguration = config
+  withStdinStdStream (stdinConfig config) $ \stdinStdStream -> do
+    withCreateProcess
+      "Cradle.run"
+      ( (proc (executable config) (arguments config))
+          { cwd = workingDir config,
+            std_in = stdinStdStream,
+            std_out = stdStream stdoutHandler,
+            std_err = stdStream stderrHandler,
+            delegate_ctlc = delegateCtlc config,
+            env = environment
           }
+      )
+      $ \_ mStdout mStderr handle -> do
+        waitForStdoutCapture <- startCapturing stdoutHandler mStdout
+        waitForStderrCapture <- startCapturing stderrHandler mStderr
+        exitCode <- waitForProcess handle
+        throwWhenNonZero config exitCode
+        stdout <- waitForStdoutCapture
+        stderr <- waitForStderrCapture
+        return $
+          ProcessResult
+            { stdout,
+              stderr,
+              exitCode,
+              processConfiguration = config
+            }
 
 withCreateProcess :: String -> CreateProcess -> (Maybe Handle -> Maybe Handle -> Maybe Handle -> ProcessHandle -> IO a) -> IO a
 withCreateProcess message createProcess action =
@@ -141,6 +141,26 @@ withCreateProcess message createProcess action =
     (createProcess_ message createProcess)
     cleanupProcess
     (\(mStdin, mStdout, mStderr, processHandle) -> action mStdin mStdout mStderr processHandle)
+
+withStdinStdStream :: StdinConfig -> (StdStream -> IO a) -> IO a
+withStdinStdStream con action = do
+  bracket start end $ \(stdStream, _) -> action stdStream
+  where
+    start :: IO (StdStream, Maybe (Handle, ThreadId))
+    start = case con of
+      InheritStdin -> return (Inherit, Nothing)
+      UseStdinHandle handle -> return (UseHandle handle, Nothing)
+      NoStdinStream -> return (NoStream, Nothing)
+      StdinString stdin -> do
+        (readEnd, writeEnd) <- safeCreatePipe
+        thread <- forkIO $ do
+          hPut writeEnd stdin
+          hClose writeEnd
+        return (UseHandle readEnd, Just (writeEnd, thread))
+    end :: (StdStream, Maybe (Handle, ThreadId)) -> IO ()
+    end (_, m) = forM_ m $ \(handle, thread) -> do
+      hClose handle
+      throwTo thread (ErrorCall "todo")
 
 data OutputStreamHandler = OutputStreamHandler
   { stdStream :: StdStream,

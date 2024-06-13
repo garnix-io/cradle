@@ -28,6 +28,7 @@ library
       Cradle.Output
       Cradle.ProcessConfiguration
       Cradle.ProcessConfiguration.Helpers
+      Cradle.SafeUnix
   other-modules:
       Paths_cradle
   hs-source-dirs:
@@ -39,6 +40,7 @@ library
     , process
     , string-conversions
     , text
+    , unix
   default-language: Haskell2010
 
 test-suite readme
@@ -55,6 +57,7 @@ test-suite readme
     , process
     , string-conversions
     , text
+    , unix
   default-language: Haskell2010
 
 test-suite spec
@@ -67,6 +70,7 @@ test-suite spec
       Cradle.Output
       Cradle.ProcessConfiguration
       Cradle.ProcessConfiguration.Helpers
+      Cradle.SafeUnix
       Paths_cradle
   hs-source-dirs:
       test
@@ -86,4 +90,5 @@ test-suite spec
     , string-conversions
     , text
     , transformers
+    , unix
   default-language: Haskell2010
