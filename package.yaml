@@ -22,6 +22,9 @@ ghc-options:
   - -Wno-name-shadowing
   - -threaded
 
+c-sources:
+  cbits/cradle.c
+
 tests:
   spec:
     main: Spec.hs

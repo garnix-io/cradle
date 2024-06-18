@@ -23,7 +23,7 @@ test: hpack
   just doctest
 
 doctest:
-  doctest -isrc src/*.hs
+  cabal repl --with-ghc=doctest
 
 watch *args="": hpack
   ghcid --command "cabal repl test:spec" --test ':main {{ args }}' --warnings

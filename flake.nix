@@ -9,6 +9,8 @@
         setupEnvironment = haskellPackages: ''
           export PYTHON_BIN_PATH=${pkgs.python3}/bin/python3
           export NIX_GHC=${haskellPackages.ghc.withPackages (p: (mkCradle haskellPackages).buildInputs)}/bin/ghc
+          export NIX_GHCPKG=${haskellPackages.ghc.withPackages (p: (mkCradle haskellPackages).buildInputs)}/bin/ghc-pkg
+          export NIX_GHC_LIBDIR=$($NIX_GHC --print-libdir)
         '';
         src = ./.;
         mkCradle = haskellPackages:
