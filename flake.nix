@@ -18,8 +18,9 @@
             (haskellPackages.callCabal2nix "cradle" src { })
             (old: {
               preBuild = setupEnvironment haskellPackages;
-              buildDepends = (old.buildDepends or [ ]) ++ [ pkgs.just haskellPackages.doctest ];
+              buildDepends = (old.buildDepends or [ ]) ++ [ pkgs.just haskellPackages.doctest pkgs.cabal-install ];
               postCheck = ''
+                HOME=$(pwd)
                 just doctest
               '';
             });
