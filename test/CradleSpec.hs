@@ -119,6 +119,11 @@ spec = do
         StdoutTrimmed output <- run $ cmd "./exe" & setNoStdin
         output `shouldBe` cs "None"
 
+      it "allows passing in stdin as a String" $ do
+        writePythonScript "exe" "print(sys.stdin.read())"
+        StdoutUntrimmed output <- run $ cmd "./exe" & setStdin (cs "foo")
+        output `shouldBe` cs "foo\n"
+
     describe "capturing stdout" $ do
       it "allows capturing stdout" $ do
         writePythonScript "exe" "print('output')"
