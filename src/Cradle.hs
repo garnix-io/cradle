@@ -68,6 +68,7 @@ module Cradle
     -- *can* import the constructors and fields from
     -- 'Control.ProcessConfiguration'.
     ProcessConfiguration,
+    showCommand,
     cmd,
     module Cradle.ProcessConfiguration.Helpers,
 
