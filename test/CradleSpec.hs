@@ -178,6 +178,18 @@ spec = do
         StdoutUntrimmed output <- run $ cmd "./exe"
         output `shouldBe` cs "foo-�-bar"
 
+      describe "addModifier" $ do
+        it "allows running modifiers with IO actions" $ do
+          let config =
+                cmd "echo"
+                  & addModifier
+                    ( do
+                        StdoutTrimmed output <- run $ cmd "echo" & addArgs ["hi"]
+                        return $ addArgs [output]
+                    )
+          StdoutTrimmed output <- run config
+          cs output `shouldBe` "hi"
+
       describe "using handles" $ do
         it "allows sending stdout to a handle" $ do
           writePythonScript "exe" "print('foo')"
