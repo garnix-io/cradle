@@ -13,7 +13,7 @@
         src = ./.;
         mkCradle = haskellPackages:
           pkgs.haskell.lib.overrideCabal
-            (haskellPackages.callCabal2nix "cradle" src { })
+            (haskellPackages.callPackage ./. {})
             (old: {
               preBuild = setupEnvironment haskellPackages;
               buildDepends = (old.buildDepends or [ ]) ++ [ pkgs.just haskellPackages.doctest ];
@@ -41,6 +41,7 @@
           default = pkgs.mkShell {
             shellHook = setupEnvironment pkgs.haskellPackages;
             buildInputs = with pkgs; [
+              cabal2nix
               ghcid
               ormolu
               cabal-install
