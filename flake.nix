@@ -13,7 +13,7 @@
         src = ./.;
         mkCradle = haskellPackages:
           pkgs.haskell.lib.overrideCabal
-            (haskellPackages.callPackage ./. {})
+            (haskellPackages.callPackage ./cabal2nix.nix {})
             (old: {
               preBuild = setupEnvironment haskellPackages;
               buildDepends = (old.buildDepends or [ ]) ++ [ pkgs.just haskellPackages.doctest ];
