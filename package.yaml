@@ -38,6 +38,7 @@ tests:
       - mockery
       - silently
       - transformers
+      - unix
   readme:
     main: README.lhs
     dependencies:
