@@ -4,6 +4,7 @@
 module Cradle.ProcessConfiguration.Helpers where
 
 import Cradle.ProcessConfiguration
+import Data.ByteString (ByteString)
 import Data.String.Conversions (ConvertibleStrings, cs)
 import System.IO (Handle)
 
@@ -18,6 +19,10 @@ setStdinHandle handle config =
 setNoStdin :: ProcessConfiguration -> ProcessConfiguration
 setNoStdin config =
   config {stdinConfig = NoStdinStream}
+
+setStdin :: ByteString -> ProcessConfiguration -> ProcessConfiguration
+setStdin stdin config =
+  config {stdinConfig = StdinString stdin}
 
 addStdoutHandle :: Handle -> ProcessConfiguration -> ProcessConfiguration
 addStdoutHandle handle config =
