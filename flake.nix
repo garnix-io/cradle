@@ -10,10 +10,9 @@
           export PYTHON_BIN_PATH=${pkgs.python3}/bin/python3
           export NIX_GHC=${haskellPackages.ghc.withPackages (p: (mkCradle haskellPackages).buildInputs)}/bin/ghc
         '';
-        src = ./.;
         mkCradle = haskellPackages:
           pkgs.haskell.lib.overrideCabal
-            (haskellPackages.callPackage ./cabal2nix.nix {})
+            (haskellPackages.callPackage ./cabal2nix.nix { })
             (old: {
               preBuild = setupEnvironment haskellPackages;
               buildDepends = (old.buildDepends or [ ]) ++ [ pkgs.just haskellPackages.doctest ];
