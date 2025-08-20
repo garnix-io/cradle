@@ -39,6 +39,7 @@
 --
 -- >>> run_ $ cmd "echo foo bar"
 -- *** Exception: echo foo bar: Cradle.run: posix_spawnp: does not exist (No such file or directory)
+-- ...
 --
 -- This is trying to run an executable with the file name @"echo foo"@, which
 -- doesn't exist. If you want to split up arguments automatically, you can do

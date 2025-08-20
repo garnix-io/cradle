@@ -1,4 +1,5 @@
 {
+  inputs.nixpkgs.url = "github:nixos/nixpkgs";
   inputs.flake-utils.url = "github:numtide/flake-utils";
   outputs = { self, nixpkgs, flake-utils }:
     flake-utils.lib.eachDefaultSystem (system:
@@ -25,9 +26,20 @@
         lib = {
           inherit mkCradle;
         };
-        packages = {
-          default = lib.mkCradle pkgs.haskellPackages;
-        };
+        packages =
+          (if system == "x86_64-linux"
+          then {
+            withGhc9_02 = lib.mkCradle pkgs.haskell.packages.ghc92;
+          }
+          else { })
+          //
+          {
+            withGhc9_04 = lib.mkCradle pkgs.haskell.packages.ghc94;
+            withGhc9_06 = lib.mkCradle pkgs.haskell.packages.ghc96;
+            withGhc9_10 = lib.mkCradle pkgs.haskell.packages.ghc910;
+            withGhc9_12 = lib.mkCradle pkgs.haskell.packages.ghc912;
+            default = lib.mkCradle pkgs.haskellPackages;
+          };
         checks = {
           hlint = pkgs.runCommand "hlint" { buildInputs = [ pkgs.hlint ]; }
             ''
