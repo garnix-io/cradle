@@ -21,15 +21,15 @@ import System.Environment
 import System.FilePath ((</>))
 import System.IO (hClose, hGetContents, hIsClosed, hPutStrLn, stderr, stdout)
 import System.IO.Silently
-import System.Process (createPipe)
 import Test.Hspec
 import Test.Mockery.Directory
 import Test.Mockery.Environment (withModifiedEnvironment)
+import TestUtils
 import Prelude hiding (getContents, length)
 
 spec :: Spec
 spec = do
-  around_ inTempDirectory $ do
+  around_ (inTempDirectory . shouldTerminate) $ do
     it "runs simple commands" $ do
       writePythonScript "exe" "open('file', 'w').write('')"
       run_ $ cmd "./exe"
@@ -104,7 +104,7 @@ spec = do
       describe "using handles" $ do
         it "allows passing in a handle for stdin" $ do
           writePythonScript "exe" "print(sys.stdin.read().strip())"
-          (readEnd, writeEnd) <- createPipe
+          (readEnd, writeEnd) <- safeCreatePipe
           _ <- forkIO $ do
             hPutStrLn writeEnd "test stdin"
             hClose writeEnd
@@ -181,21 +181,21 @@ spec = do
       describe "using handles" $ do
         it "allows sending stdout to a handle" $ do
           writePythonScript "exe" "print('foo')"
-          (readEnd, writeEnd) <- createPipe
+          (readEnd, writeEnd) <- safeCreatePipe
           run_ $ cmd "./exe" & addStdoutHandle writeEnd
           hClose writeEnd
           hGetContents readEnd `shouldReturn` cs "foo\n"
 
         it "does not relay stdout when it's captured (by default)" $ do
           writePythonScript "exe" "print('foo')"
-          (_readEnd, writeEnd) <- createPipe
+          (_readEnd, writeEnd) <- safeCreatePipe
           stdout <- capture_ $ run_ $ cmd "./exe" & addStdoutHandle writeEnd
           hClose writeEnd
           stdout `shouldBe` ""
 
         it "doesn't close the handle after running the process" $ do
           writePythonScript "exe" "print(sys.argv[1])"
-          (readEnd, writeEnd) <- createPipe
+          (readEnd, writeEnd) <- safeCreatePipe
           run_ $
             cmd "./exe"
               & addArgs ["foo"]
@@ -211,7 +211,7 @@ spec = do
 
         it "allows capturing stdout *and* passing in a stdout handle" $ do
           writePythonScript "exe" "print('foo')"
-          (readEnd, writeEnd) <- createPipe
+          (readEnd, writeEnd) <- safeCreatePipe
           StdoutUntrimmed output <-
             run $
               cmd "./exe"
@@ -222,8 +222,8 @@ spec = do
 
         it "allows specifying multiple stdout handles" $ do
           writePythonScript "exe" "print('foo')"
-          (readEnd1, writeEnd1) <- createPipe
-          (readEnd2, writeEnd2) <- createPipe
+          (readEnd1, writeEnd1) <- safeCreatePipe
+          (readEnd2, writeEnd2) <- safeCreatePipe
           run_ $
             cmd "./exe"
               & addStdoutHandle writeEnd1
@@ -260,7 +260,7 @@ spec = do
       describe "using handles" $ do
         it "allows sending stderr to a handle" $ do
           writePythonScript "exe" "print('foo', file=sys.stderr)"
-          (readEnd, writeEnd) <- createPipe
+          (readEnd, writeEnd) <- safeCreatePipe
           run_ $
             cmd "./exe"
               & addStderrHandle writeEnd
@@ -269,14 +269,14 @@ spec = do
 
         it "does not relay stderr when it's captured (by default)" $ do
           writePythonScript "exe" "print('foo', file=sys.stderr)"
-          (_readEnd, writeEnd) <- createPipe
+          (_readEnd, writeEnd) <- safeCreatePipe
           stderr <- hCapture_ [stderr] $ run_ $ cmd "./exe" & addStderrHandle writeEnd
           hClose writeEnd
           stderr `shouldBe` ""
 
         it "doesn't close the handle after running the process" $ do
           writePythonScript "exe" "print(sys.argv[1], file=sys.stderr)"
-          (readEnd, writeEnd) <- createPipe
+          (readEnd, writeEnd) <- safeCreatePipe
           run_ $
             cmd "./exe"
               & addStderrHandle writeEnd
@@ -298,7 +298,7 @@ spec = do
                   throwIO $ ErrorCall $ "stderr:\n" <> cs err
                 return o
           writePythonScript "exe" "print('foo', file=sys.stderr)"
-          (readEnd, writeEnd) <- createPipe
+          (readEnd, writeEnd) <- safeCreatePipe
           StderrRaw output <-
             wrapper $
               cmd "./exe"

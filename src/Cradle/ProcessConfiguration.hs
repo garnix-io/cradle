@@ -48,6 +48,7 @@ data StdinConfig
   = InheritStdin
   | UseStdinHandle Handle
   | NoStdinStream
+  deriving (Show)
 
 data OutputStreamConfig = OutputStreamConfig
   { capture :: Bool,
