@@ -90,7 +90,9 @@ import Data.Function ((&))
 import System.Exit (ExitCode (..))
 
 run :: (Output output, MonadIO m) => ProcessConfiguration -> m output
-run = liftIO . runAndGetOutput
+run config = do
+  modifiers' <- liftIO $ modifiers config
+  liftIO $ runAndGetOutput (modifiers' config)
 
 -- | Same as `run`, but always returns '()'.
 --

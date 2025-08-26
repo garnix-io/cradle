@@ -39,6 +39,15 @@ setDelegateCtrlC :: ProcessConfiguration -> ProcessConfiguration
 setDelegateCtrlC config =
   config {delegateCtlc = True}
 
+addModifier :: IO (ProcessConfiguration -> ProcessConfiguration) -> ProcessConfiguration -> ProcessConfiguration
+addModifier newModifier config =
+  config
+    { modifiers = do
+        existingModifier <- modifiers config
+        new <- newModifier
+        return (new . existingModifier)
+    }
+
 modifyEnvVar ::
   String ->
   (Maybe String -> Maybe String) ->

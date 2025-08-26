@@ -41,7 +41,8 @@ data ProcessConfiguration = ProcessConfiguration
     stdinConfig :: StdinConfig,
     stdoutConfig :: OutputStreamConfig,
     stderrConfig :: OutputStreamConfig,
-    delegateCtlc :: Bool
+    delegateCtlc :: Bool,
+    modifiers :: IO (ProcessConfiguration -> ProcessConfiguration)
   }
 
 data StdinConfig
@@ -90,6 +91,7 @@ cmd executable =
       stdinConfig = InheritStdin,
       stdoutConfig = defaultOutputStreamConfig,
       stderrConfig = defaultOutputStreamConfig,
+      modifiers = pure id,
       delegateCtlc = False
     }
 
