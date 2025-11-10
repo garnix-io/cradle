@@ -6,7 +6,7 @@ module CradleSpec where
 
 import Control.Concurrent (forkIO, killThread, threadDelay)
 import Control.Exception
-import Control.Monad (void, when)
+import Control.Monad (void)
 import Control.Monad.Trans.Identity
 import Cradle
 import Data.ByteString (pack)
