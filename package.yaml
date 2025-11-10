@@ -15,11 +15,15 @@ dependencies:
   - process
   - string-conversions
   - text
+  - unix
 
 ghc-options:
   - -Wall
   - -Wno-name-shadowing
   - -threaded
+
+c-sources:
+  cbits/cradle.c
 
 tests:
   spec:
