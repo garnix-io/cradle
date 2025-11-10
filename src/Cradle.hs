@@ -31,6 +31,13 @@
 -- >>> run_ $ cmd "echo"
 -- <BLANKLINE>
 --
+-- 'ProcessConfiguration.ProcessConfiguration' has an 'IsString' instance for convenience.
+-- So if you enable @OverloadedStrings@ you can also write this:
+--
+-- >>> :set -XOverloadedStrings
+-- >>> run_ $ "echo" & addArgs ["foo"]
+-- foo
+--
 -- == No Shell, No Automatic Splitting of Strings
 --
 -- `cradle` will never wrap your process in a shell process.
