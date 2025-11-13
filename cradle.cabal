@@ -1,6 +1,6 @@
-cabal-version: 1.12
+cabal-version: 1.18
 
--- This file has been generated from package.yaml by hpack version 0.35.2.
+-- This file has been generated from package.yaml by hpack version 0.37.0.
 --
 -- see: https://github.com/sol/hpack
 
@@ -17,6 +17,8 @@ maintainer:     garnix team <dev@garnix.io>
 license:        BSD3
 license-file:   LICENSE
 build-type:     Simple
+extra-doc-files:
+    README.md
 
 source-repository head
   type: git
